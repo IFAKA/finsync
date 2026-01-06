@@ -73,8 +73,8 @@ function TransactionsContent() {
   // Memoize options for useTransactions to prevent unnecessary re-queries
   const transactionOptions = useMemo(() => ({
     categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
-    month: needsAttention ? undefined : (selectedMonth && selectedMonth !== "all" ? selectedMonth : undefined),
-  }), [selectedCategory, selectedMonth, needsAttention]);
+    month: selectedMonth && selectedMonth !== "all" ? selectedMonth : undefined,
+  }), [selectedCategory, selectedMonth]);
 
   // Fetch transactions with current filters
   const { data: allTransactions, isLoading: transactionsLoading } = useTransactions(transactionOptions);
