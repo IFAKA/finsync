@@ -216,6 +216,7 @@ export function serializeSyncData<T>(data: T): T {
 
 /**
  * Deserialize dates in received sync data
+ * Also handles null -> undefined conversion for optional fields that don't survive binary serialization
  */
 export function deserializeSyncData<T extends Record<string, unknown>>(data: T): T {
   const dateFields = [
@@ -223,6 +224,15 @@ export function deserializeSyncData<T extends Record<string, unknown>>(data: T):
     "createdAt",
     "_lastModified",
     "lastSyncTimestamp",
+  ];
+
+  // Optional fields that should be undefined instead of null
+  // These get converted to null during binarypack serialization
+  const optionalFields = [
+    "amountEquals",
+    "amountMin",
+    "amountMax",
+    "descriptionContains",
   ];
 
   function processValue(value: unknown): unknown {
@@ -243,6 +253,10 @@ export function deserializeSyncData<T extends Record<string, unknown>>(data: T):
     for (const [key, value] of Object.entries(obj)) {
       if (dateFields.includes(key) && typeof value === "string") {
         result[key] = new Date(value);
+      } else if (optionalFields.includes(key) && value === null) {
+        // Convert null back to undefined for optional fields
+        // These fields were undefined before serialization but binarypack converts undefined to null
+        result[key] = undefined;
       } else {
         result[key] = processValue(value);
       }

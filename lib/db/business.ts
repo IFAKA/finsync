@@ -79,15 +79,15 @@ export async function findSimilarTransactions(
     }
 
     // Amount equals (with small tolerance for floating point)
-    if (criteria.amountEquals !== undefined) {
+    if (criteria.amountEquals != null) {
       if (Math.abs(tx.amount - criteria.amountEquals) > 0.01) return false;
     }
 
     // Amount range
-    if (criteria.amountMin !== undefined) {
+    if (criteria.amountMin != null) {
       if (tx.amount < criteria.amountMin) return false;
     }
-    if (criteria.amountMax !== undefined) {
+    if (criteria.amountMax != null) {
       if (tx.amount > criteria.amountMax) return false;
     }
 

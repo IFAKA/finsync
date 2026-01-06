@@ -250,9 +250,9 @@ export default function RulesPage() {
                           </span>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
-                          {rule.amountEquals !== undefined && <span>= {formatCurrency(rule.amountEquals)}</span>}
-                          {rule.amountMin !== undefined && <span>&ge; {formatCurrency(rule.amountMin)}</span>}
-                          {rule.amountMax !== undefined && <span>&le; {formatCurrency(rule.amountMax)}</span>}
+                          {rule.amountEquals != null && <span>= {formatCurrency(rule.amountEquals)}</span>}
+                          {rule.amountMin != null && <span>&ge; {formatCurrency(rule.amountMin)}</span>}
+                          {rule.amountMax != null && <span>&le; {formatCurrency(rule.amountMax)}</span>}
                           {rule.descriptionContains && <span>"{rule.descriptionContains}"</span>}
                         </div>
                       </div>
@@ -281,9 +281,9 @@ export default function RulesPage() {
                             </span>
                           </div>
                           <div className="text-sm text-muted-foreground mt-1 space-x-3">
-                            {rule.amountEquals !== undefined && <span>Amount = {formatCurrency(rule.amountEquals)}</span>}
-                            {rule.amountMin !== undefined && <span>Min: {formatCurrency(rule.amountMin)}</span>}
-                            {rule.amountMax !== undefined && <span>Max: {formatCurrency(rule.amountMax)}</span>}
+                            {rule.amountEquals != null && <span>Amount = {formatCurrency(rule.amountEquals)}</span>}
+                            {rule.amountMin != null && <span>Min: {formatCurrency(rule.amountMin)}</span>}
+                            {rule.amountMax != null && <span>Max: {formatCurrency(rule.amountMax)}</span>}
                             {rule.descriptionContains && <span>Contains: "{rule.descriptionContains}"</span>}
                           </div>
                         </div>

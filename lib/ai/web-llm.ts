@@ -193,20 +193,20 @@ export function applyRules(
       }
 
       // Check exact amount
-      if (rule.amountEquals !== undefined && isMatch) {
+      if (rule.amountEquals != null && isMatch) {
         if (Math.abs(tx.amount - rule.amountEquals) > 0.01) {
           isMatch = false;
         }
       }
 
       // Check amount range
-      if (rule.amountMin !== undefined && isMatch) {
+      if (rule.amountMin != null && isMatch) {
         if (tx.amount < rule.amountMin) {
           isMatch = false;
         }
       }
 
-      if (rule.amountMax !== undefined && isMatch) {
+      if (rule.amountMax != null && isMatch) {
         if (tx.amount > rule.amountMax) {
           isMatch = false;
         }
