@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense, useMemo, useEffect } from "react";
+import { useState, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -59,8 +59,8 @@ function TransactionsContent() {
   const urlMonth = searchParams.get("month");
   const initialNeedsAttention = searchParams.get("attention") === "true";
 
-  // If no month specified in URL and not viewing needs attention, default to most recent month
-  const initialMonth = urlMonth || (initialNeedsAttention ? null : (availableMonths[0] || null));
+  // Default to "all" (All Time) - only use specific month if explicitly in URL
+  const initialMonth = urlMonth || "all";
   const initialSearch = searchParams.get("search") || "";
   const initialSortBy = (searchParams.get("sort") as "date" | "amount") || "date";
   const initialPage = Math.max(0, parseInt(searchParams.get("page") || "1", 10) - 1);
@@ -69,15 +69,6 @@ function TransactionsContent() {
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(initialMonth);
   const [needsAttention, setNeedsAttention] = useState(initialNeedsAttention);
-
-  // Default to most recent month if no month specified
-  useEffect(() => {
-    if (availableMonths.length > 0 && selectedMonth === null) {
-      setSelectedMonth(availableMonths[0]);
-    } else if (availableMonths.length === 0 && selectedMonth === null) {
-      setSelectedMonth("all");
-    }
-  }, [availableMonths, selectedMonth]);
 
   // Memoize options for useTransactions to prevent unnecessary re-queries
   const transactionOptions = useMemo(() => ({

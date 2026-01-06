@@ -177,23 +177,23 @@ export function useTransactionFilters({
     setSearch("");
     setDebouncedSearch("");
     setSelectedCategory("all");
-    const defaultMonth = availableMonths[0] || "all";
-    setSelectedMonth(defaultMonth);
+    setSelectedMonth("all");
     setSortBy("date");
     setPage(0);
     setNeedsAttention(false);
-    router.replace(`/transactions?month=${defaultMonth}`, { scroll: false });
+    router.replace("/transactions", { scroll: false });
     onCategoryChange?.("all");
-    onMonthChange?.(defaultMonth);
+    onMonthChange?.("all");
     onNeedsAttentionChange?.(false);
   };
 
+  // "all" is the default for month, so selecting a specific month IS a filter
   const hasFilters = Boolean(
     debouncedSearch ||
     selectedCategory !== "all" ||
     sortBy !== "date" ||
     needsAttention ||
-    (selectedMonth && selectedMonth !== availableMonths[0])
+    (selectedMonth && selectedMonth !== "all")
   );
 
   const activeFilterCount = [
@@ -201,6 +201,7 @@ export function useTransactionFilters({
     selectedCategory !== "all",
     sortBy !== "date",
     needsAttention,
+    selectedMonth && selectedMonth !== "all",
   ].filter(Boolean).length;
 
   const navigateMonth = (delta: number) => {

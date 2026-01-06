@@ -51,25 +51,26 @@ export function MobileTransactionFilters({
 }: MobileFiltersProps) {
   return (
     <div className="flex flex-col gap-3 md:hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-semibold">Transactions</h1>
-          {needsAttention && (
-            <div className="flex items-center gap-1.5 bg-warning/10 border border-warning/30 rounded-full px-2 py-0.5">
-              <AlertTriangle className="w-3 h-3 text-warning" />
-              <span className="text-xs font-medium">Needs Attention</span>
+      {/* Header - only show if needs attention badge or count */}
+      {(needsAttention || totalCount > 0) && (
+        <div className="flex items-center justify-between">
+          {needsAttention ? (
+            <div className="flex items-center gap-1.5 bg-warning/10 border border-warning/30 rounded-full px-2 py-1">
+              <AlertTriangle className="w-3.5 h-3.5 text-warning" />
+              <span className="text-sm font-medium">Needs Attention</span>
               <button
                 onClick={() => onNeedsAttentionChange(false)}
                 className="p-0.5 hover:bg-warning/20 rounded-full"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
+          ) : (
+            <div />
           )}
+          <span className="text-xs text-muted-foreground">{totalCount} transactions</span>
         </div>
-        <span className="text-xs text-muted-foreground">{totalCount} items</span>
-      </div>
+      )}
 
       {/* Search */}
       <div className="relative">
