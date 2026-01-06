@@ -7,6 +7,7 @@ import {
   createSyncRequestMessage,
   createSyncDataMessage,
   createAckMessage,
+  deserializeSyncData,
 } from "./sync-protocol";
 import { localDB, getDeviceId } from "@/lib/db";
 
@@ -233,7 +234,9 @@ export class P2PPeerManager {
         this.setState("syncing");
         this.callbacks.onSyncStart?.();
 
-        await localDB.mergeChanges(message.payload.data);
+        // Deserialize dates (JSON transmission converts Date objects to strings)
+        const deserializedData = deserializeSyncData(message.payload.data);
+        await localDB.mergeChanges(deserializedData);
         await localDB.updateSyncState({
           lastSyncTimestamp: new Date(),
         });
