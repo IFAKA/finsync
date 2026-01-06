@@ -315,6 +315,20 @@ export function SyncCreateMode({
                   <span>Expires in {formatTime(expirySeconds)}</span>
                 </div>
 
+                <button
+                  onClick={onCopyCode}
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors cursor-pointer mx-auto"
+                >
+                  <span className="font-mono text-sm tracking-wider">
+                    {roomCode}
+                  </span>
+                  {copied ? (
+                    <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  )}
+                </button>
+
                 <div className="flex items-center justify-center gap-1">
                   <span className="text-xs text-muted-foreground mr-2">
                     Verify:
@@ -324,15 +338,7 @@ export function SyncCreateMode({
                   </span>
                 </div>
 
-                <div className="flex gap-2 justify-center">
-                  <Button variant="secondary" size="sm" onClick={onCopyCode}>
-                    {copied ? (
-                      <Check className="w-4 h-4 mr-2 text-green-500" />
-                    ) : (
-                      <Copy className="w-4 h-4 mr-2" />
-                    )}
-                    Copy Code
-                  </Button>
+                <div className="flex justify-center">
                   <Button variant="secondary" size="sm" onClick={onShare}>
                     <Share2 className="w-4 h-4 mr-2" />
                     Share
