@@ -12,6 +12,8 @@ import {
   SyncConnectedMode,
   SyncSyncingMode,
   SyncSuccessMode,
+  SyncStepper,
+  getStepFromMode,
   type DialogMode,
 } from "./sync-dialog/index";
 
@@ -74,9 +76,12 @@ export function SyncDialog({
     }
   };
 
+  const currentStep = getStepFromMode(mode);
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
+        <SyncStepper currentStep={currentStep} />
         <AnimatePresence mode="wait">
           {mode === "choose" && (
             <SyncChooseMode

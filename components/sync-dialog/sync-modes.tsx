@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { motion } from "framer-motion";
 import {
   Copy,
@@ -9,7 +9,10 @@ import {
   ArrowRight,
   Share2,
   Clock,
+  Link,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type { DialogMode } from "./use-sync-dialog-state";
 import { WifiIcon, SmartphoneIcon } from "@/components/icons";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +29,120 @@ import {
   getRoomShareUrl,
   getVerificationEmojis,
 } from "@/lib/p2p/room-code";
+
+// Step configuration (starts after choosing create/join)
+const SYNC_STEPS = [
+  { label: "Connect", icon: Link },
+  { label: "Sync", icon: RefreshCw },
+  { label: "Done", icon: Check },
+] as const;
+
+// Get step number from dialog mode (0 = stepper not shown)
+export function getStepFromMode(mode: DialogMode): number {
+  if (mode === "choose") return 0; // No stepper on choose screen
+  if (["create", "join", "connected"].includes(mode)) return 1; // Connect step
+  if (mode === "syncing") return 2;
+  if (mode === "success") return 3;
+  return 0;
+}
+
+// Step indicator component
+function StepIndicator({
+  icon: Icon,
+  label,
+  status,
+}: {
+  icon: LucideIcon;
+  label: string;
+  status: "completed" | "current" | "pending";
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <motion.div
+        className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+          status === "completed"
+            ? "bg-green-500 text-white"
+            : status === "current"
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground"
+        }`}
+        initial={false}
+        animate={
+          status === "current"
+            ? { scale: [1, 1.05, 1] }
+            : { scale: 1 }
+        }
+        transition={
+          status === "current"
+            ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
+            : { duration: 0.2 }
+        }
+      >
+        {status === "completed" ? (
+          <Check className="w-4 h-4" />
+        ) : (
+          <Icon className="w-4 h-4" />
+        )}
+      </motion.div>
+      <span
+        className={`text-xs transition-colors ${
+          status === "pending" ? "text-muted-foreground" : "text-foreground"
+        }`}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+// Connector line between steps
+function StepConnector({ completed }: { completed: boolean }) {
+  return (
+    <div className="flex-1 h-0.5 bg-muted mx-1 relative overflow-hidden">
+      <motion.div
+        className="absolute inset-0 bg-green-500"
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: completed ? 1 : 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        style={{ transformOrigin: "left" }}
+      />
+    </div>
+  );
+}
+
+// Main stepper component
+interface SyncStepperProps {
+  currentStep: number;
+}
+
+export function SyncStepper({ currentStep }: SyncStepperProps) {
+  // Don't render if on choose screen (step 0)
+  if (currentStep === 0) return null;
+
+  return (
+    <div className="flex items-center px-2 pb-4 mb-2">
+      {SYNC_STEPS.map((step, i) => {
+        const stepNumber = i + 1;
+        return (
+          <Fragment key={step.label}>
+            {i > 0 && <StepConnector completed={currentStep > stepNumber} />}
+            <StepIndicator
+              icon={step.icon}
+              label={step.label}
+              status={
+                currentStep > stepNumber
+                  ? "completed"
+                  : currentStep === stepNumber
+                  ? "current"
+                  : "pending"
+              }
+            />
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+}
 
 // SyncOptionCard for choose mode
 interface SyncOptionCardProps {

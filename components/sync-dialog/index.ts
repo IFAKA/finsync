@@ -7,4 +7,6 @@ export {
   SyncConnectedMode,
   SyncSyncingMode,
   SyncSuccessMode,
+  SyncStepper,
+  getStepFromMode,
 } from "./sync-modes";
