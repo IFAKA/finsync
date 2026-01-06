@@ -1,4 +1,3 @@
-const CACHE_NAME = 'budget-pwa-v2';
 const STATIC_CACHE = 'budget-static-v2';
 const DYNAMIC_CACHE = 'budget-dynamic-v2';
 

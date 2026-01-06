@@ -162,7 +162,6 @@ export function useTransactionCount(month?: string) {
 }
 
 export function useAvailableMonths() {
-  const db = getLocalDB();
   const { isReady } = useDbInit();
 
   const months = useLiveQuery(async () => {
@@ -343,7 +342,6 @@ export function useRuleMutations() {
 
 // Monthly summary hook
 export function useMonthlySummary(month: string) {
-  const db = getLocalDB();
   const { isReady } = useDbInit();
 
   const summary = useLiveQuery(async () => {

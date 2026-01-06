@@ -58,8 +58,7 @@ export function SpendingChart({ data, width = 300, height = 300, onCategoryClick
       .cornerRadius(4)
       .padAngle(0.02);
 
-    const arcs = g
-      .selectAll("path")
+    g.selectAll("path")
       .data(pie(expenses))
       .enter()
       .append("path")

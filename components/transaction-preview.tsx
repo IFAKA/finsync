@@ -354,7 +354,7 @@ export function TransactionPreview({
       // Wait a bit before completing to show final status
       await new Promise((resolve) => setTimeout(resolve, 500));
       onImportComplete();
-    } catch (error) {
+    } catch {
       setStatus("Import failed");
       toast.error("Import failed");
       playSound("error");

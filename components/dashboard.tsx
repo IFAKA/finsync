@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, ChevronLeft, ChevronRight, ArrowRight, AlertTriangle, List, TrendingUp, TrendingDown, PiggyBank, Target } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -29,7 +28,6 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { SpendingBarChart } from "./spending-chart";
 import {
   AnimatedNumber,
-  AnimatedProgress,
   MotionButton,
   FadeIn,
   StaggerItem,

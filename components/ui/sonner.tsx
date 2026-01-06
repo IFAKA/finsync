@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Toaster as Sonner, toast } from "sonner";
 import { playSound } from "@/lib/sounds";
 
@@ -8,8 +8,6 @@ type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 // Hook to play sounds when toasts appear
 function useToastSounds() {
-  const toastIds = useRef(new Set<string | number>());
-
   useEffect(() => {
     // Subscribe to toast events via the toast store
     const originalSuccess = toast.success;

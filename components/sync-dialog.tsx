@@ -6,7 +6,6 @@ import {
   Copy,
   Check,
   RefreshCw,
-  X,
   ArrowRight,
   Share2,
   Clock,
@@ -110,13 +109,10 @@ export function SyncDialog({ open, onOpenChange, initialMode = "choose", onSyncC
   const {
     state,
     roomCode,
-    isHost,
     error,
-    lastSyncTime,
     createRoom,
     joinRoom,
     disconnect,
-    sync,
     isConnected,
     isSyncing,
   } = useP2PSync();
@@ -168,7 +164,7 @@ export function SyncDialog({ open, onOpenChange, initialMode = "choose", onSyncC
     setMode("create");
     try {
       await createRoom();
-    } catch (err) {
+    } catch {
       toast.error("Failed to create room");
       setMode("choose");
     }
@@ -188,7 +184,7 @@ export function SyncDialog({ open, onOpenChange, initialMode = "choose", onSyncC
       await joinRoom(normalized);
       // Mode will auto-transition to "syncing" via useEffect when connected
       toast.success("Connected!");
-    } catch (err) {
+    } catch {
       setJoinError("Failed to connect. Check the code and try again.");
     }
   };
@@ -231,7 +227,7 @@ export function SyncDialog({ open, onOpenChange, initialMode = "choose", onSyncC
           text: `Join my sync room: ${roomCode}`,
           url,
         });
-      } catch (err) {
+      } catch {
         // User cancelled or share failed, fallback to copy
         await navigator.clipboard.writeText(url);
         toast.success("Link copied!");
@@ -255,16 +251,6 @@ export function SyncDialog({ open, onOpenChange, initialMode = "choose", onSyncC
     toast.info("Disconnected");
   };
 
-  const handleSync = async () => {
-    try {
-      await sync();
-      toast.success("Sync complete!");
-    } catch (err) {
-      toast.error("Sync failed");
-    }
-  };
-
-  
   // Reset mode when dialog closes
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {

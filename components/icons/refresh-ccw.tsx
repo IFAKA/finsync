@@ -2,7 +2,7 @@
 
 import { motion, useAnimation } from "framer-motion";
 import type { HTMLAttributes } from "react";
-import { forwardRef, useCallback, useImperativeHandle, useRef, useEffect } from "react";
+import { forwardRef, useImperativeHandle, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 export interface RefreshCcwIconHandle {

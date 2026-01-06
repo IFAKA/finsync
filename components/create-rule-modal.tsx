@@ -15,7 +15,6 @@ import {
 import { useIsMobile } from "@/lib/hooks/use-media-query";
 import {
   useCategories,
-  useRules,
   useFindSimilarTransactions,
   type LocalTransaction,
   type LocalCategory,
@@ -61,7 +60,6 @@ export function CreateRuleModal({
 }: CreateRuleModalProps) {
   const isMobile = useIsMobile();
   const { data: categories } = useCategories();
-  const { data: rules } = useRules();
   const { findSimilar } = useFindSimilarTransactions();
 
   // Mobile step: 0 = criteria, 1 = preview
