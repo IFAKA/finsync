@@ -256,7 +256,7 @@ function NeedsAttentionSection({
             </span>
           </CardTitle>
           <Link
-            href="/transactions"
+            href="/transactions?attention=true"
             className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
             View all

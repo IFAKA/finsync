@@ -9,24 +9,40 @@ const PAGE_SIZE = 25;
 interface UseTransactionFiltersOptions {
   initialCategory?: string;
   initialMonth?: string | null;
+  initialSearch?: string;
+  initialSortBy?: "date" | "amount";
+  initialPage?: number;
+  initialNeedsAttention?: boolean;
   availableMonths: string[];
   allTransactions: LocalTransaction[];
+  // External callbacks for when filters change (to sync with parent state)
+  onCategoryChange?: (value: string) => void;
+  onMonthChange?: (value: string | null) => void;
+  onNeedsAttentionChange?: (value: boolean) => void;
 }
 
 export function useTransactionFilters({
   initialCategory = "all",
   initialMonth = null,
+  initialSearch = "",
+  initialSortBy = "date",
+  initialPage = 0,
+  initialNeedsAttention = false,
   availableMonths,
   allTransactions,
+  onCategoryChange,
+  onMonthChange,
+  onNeedsAttentionChange,
 }: UseTransactionFiltersOptions) {
   const router = useRouter();
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(initialMonth);
-  const [sortBy, setSortBy] = useState<"date" | "amount">("date");
-  const [page, setPage] = useState(0);
+  const [sortBy, setSortBy] = useState<"date" | "amount">(initialSortBy);
+  const [page, setPage] = useState(initialPage);
+  const [needsAttention, setNeedsAttention] = useState(initialNeedsAttention);
 
   // Debounce search
   useEffect(() => {
@@ -49,6 +65,11 @@ export function useTransactionFilters({
   const filteredTransactions = useMemo(() => {
     let result = [...allTransactions];
 
+    // Needs attention filter
+    if (needsAttention) {
+      result = result.filter((t) => !t.categoryId || t.needsReview);
+    }
+
     // Search filter
     if (debouncedSearch) {
       const searchLower = debouncedSearch.toLowerCase();
@@ -67,7 +88,7 @@ export function useTransactionFilters({
     }
 
     return result;
-  }, [allTransactions, debouncedSearch, sortBy]);
+  }, [allTransactions, debouncedSearch, sortBy, needsAttention]);
 
   // Paginate
   const paginatedTransactions = useMemo(() => {
@@ -79,10 +100,29 @@ export function useTransactionFilters({
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   // Update URL when filters change
-  const updateUrlParams = (category: string, month: string) => {
+  const updateUrlParams = (updates: {
+    category?: string;
+    month?: string;
+    search?: string;
+    sort?: string;
+    page?: number;
+    attention?: boolean;
+  }) => {
     const params = new URLSearchParams();
-    if (category !== "all") params.set("category", category);
-    if (month !== "all") params.set("month", month);
+    const cat = updates.category ?? selectedCategory;
+    const mon = updates.month ?? selectedMonth ?? "all";
+    const srch = updates.search ?? debouncedSearch;
+    const srt = updates.sort ?? sortBy;
+    const pg = updates.page ?? page;
+    const att = updates.attention ?? needsAttention;
+
+    if (cat !== "all") params.set("category", cat);
+    if (mon !== "all") params.set("month", mon);
+    if (srch) params.set("search", srch);
+    if (srt !== "date") params.set("sort", srt);
+    if (pg > 0) params.set("page", String(pg + 1)); // 1-indexed for URL
+    if (att) params.set("attention", "true");
+
     const newUrl = params.toString() ? `?${params.toString()}` : "/transactions";
     router.replace(newUrl, { scroll: false });
   };
@@ -90,13 +130,47 @@ export function useTransactionFilters({
   const handleCategoryFilterChange = (value: string) => {
     setSelectedCategory(value);
     setPage(0);
-    updateUrlParams(value, selectedMonth || "all");
+    updateUrlParams({ category: value, page: 0 });
+    onCategoryChange?.(value);
   };
 
   const handleMonthFilterChange = (value: string) => {
     setSelectedMonth(value);
     setPage(0);
-    updateUrlParams(selectedCategory, value);
+    updateUrlParams({ month: value, page: 0 });
+    onMonthChange?.(value);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(0);
+  };
+
+  // Update URL when debounced search changes
+  useEffect(() => {
+    // Only update URL after initial render when search actually changes
+    if (debouncedSearch !== initialSearch) {
+      updateUrlParams({ search: debouncedSearch, page: 0 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
+  const handleSortChange = (value: "date" | "amount") => {
+    setSortBy(value);
+    setPage(0);
+    updateUrlParams({ sort: value, page: 0 });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    updateUrlParams({ page: newPage });
+  };
+
+  const handleNeedsAttentionChange = (value: boolean) => {
+    setNeedsAttention(value);
+    setPage(0);
+    updateUrlParams({ attention: value, page: 0 });
+    onNeedsAttentionChange?.(value);
   };
 
   const clearFilters = () => {
@@ -105,13 +179,20 @@ export function useTransactionFilters({
     setSelectedCategory("all");
     const defaultMonth = availableMonths[0] || "all";
     setSelectedMonth(defaultMonth);
+    setSortBy("date");
     setPage(0);
-    updateUrlParams("all", defaultMonth);
+    setNeedsAttention(false);
+    router.replace(`/transactions?month=${defaultMonth}`, { scroll: false });
+    onCategoryChange?.("all");
+    onMonthChange?.(defaultMonth);
+    onNeedsAttentionChange?.(false);
   };
 
   const hasFilters = Boolean(
     debouncedSearch ||
     selectedCategory !== "all" ||
+    sortBy !== "date" ||
+    needsAttention ||
     (selectedMonth && selectedMonth !== availableMonths[0])
   );
 
@@ -119,6 +200,7 @@ export function useTransactionFilters({
     debouncedSearch,
     selectedCategory !== "all",
     sortBy !== "date",
+    needsAttention,
   ].filter(Boolean).length;
 
   const navigateMonth = (delta: number) => {
@@ -148,6 +230,7 @@ export function useTransactionFilters({
     selectedMonth,
     sortBy,
     page,
+    needsAttention,
     // Computed
     filteredTransactions,
     paginatedTransactions,
@@ -158,9 +241,10 @@ export function useTransactionFilters({
     canGoNewer,
     canGoOlder,
     // Actions
-    setSearch,
-    setPage,
-    setSortBy,
+    setSearch: handleSearchChange,
+    setPage: handlePageChange,
+    setSortBy: handleSortChange,
+    setNeedsAttention: handleNeedsAttentionChange,
     handleCategoryFilterChange,
     handleMonthFilterChange,
     clearFilters,

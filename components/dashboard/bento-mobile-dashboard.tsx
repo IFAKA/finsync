@@ -179,7 +179,7 @@ export function BentoMobileDashboard({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
-        onClick={() => router.push(`/transactions?month=${selectedMonth}`)}
+        onClick={() => router.push(`/transactions?month=${selectedMonth}&sort=amount`)}
         className="bg-card border border-border rounded-xl p-4 active:scale-[0.99] transition-transform cursor-pointer"
       >
         <div className="flex items-center justify-between mb-3">
@@ -225,7 +225,7 @@ export function BentoMobileDashboard({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
-          onClick={() => router.push("/transactions")}
+          onClick={() => router.push(attentionCount > 0 ? "/transactions?attention=true" : "/transactions")}
           className={`border rounded-xl p-3 active:scale-[0.98] transition-transform cursor-pointer ${
             attentionCount > 0
               ? "bg-warning/10 border-warning/30"

@@ -6,81 +6,128 @@ import {
   ResponsiveModalTitle,
   ResponsiveModalBody,
 } from "@/components/ui/responsive-modal";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import type { LocalCategory, LocalTransaction } from "@/lib/hooks/db";
 
 interface TransactionDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  transaction: {
-    id: string;
-    date: Date;
-    description: string;
-    rawDescription: string;
-    amount: number;
-    balance?: number;
-    categoryId?: string;
-    categoryConfidence?: number;
-    merchant?: string;
-    notes?: string;
-    isRecurring: boolean;
-    needsReview: boolean;
-    importBatchId: string;
-    sourceFile: string;
-    bankName?: string;
-    createdAt: Date;
-  } | null;
+  transaction: LocalTransaction | null;
+  categories?: LocalCategory[];
+  onCategoryChange?: (transaction: LocalTransaction, categoryId: string) => void;
 }
 
 export function TransactionDetailDialog({
   open,
   onOpenChange,
   transaction,
+  categories = [],
+  onCategoryChange,
 }: TransactionDetailDialogProps) {
   if (!transaction) return null;
 
-  const details = [
-    { label: "Date", value: formatDate(transaction.date) },
-    { label: "Amount", value: formatCurrency(transaction.amount), highlight: true },
-    { label: "Description", value: transaction.description },
-    { label: "Raw Description", value: transaction.rawDescription },
-    { label: "Merchant", value: transaction.merchant },
-    { label: "Balance", value: transaction.balance !== undefined ? formatCurrency(transaction.balance) : null },
-    { label: "Category ID", value: transaction.categoryId },
-    {
-      label: "Confidence",
-      value: transaction.categoryConfidence !== undefined
-        ? `${Math.round(transaction.categoryConfidence * 100)}%`
-        : null,
-    },
-    { label: "Needs Review", value: transaction.needsReview ? "Yes" : "No" },
-    { label: "Recurring", value: transaction.isRecurring ? "Yes" : "No" },
-    { label: "Notes", value: transaction.notes },
-    { label: "Bank", value: transaction.bankName },
-    { label: "Source File", value: transaction.sourceFile },
-    { label: "Import Batch", value: transaction.importBatchId },
-    { label: "Imported At", value: formatDate(transaction.createdAt) },
-  ];
+  const currentCategory = categories.find((c) => c.id === transaction.categoryId);
 
   return (
     <ResponsiveModal open={open} onOpenChange={onOpenChange} className="max-w-md">
       <ResponsiveModalHeader>
         <ResponsiveModalTitle>Transaction Details</ResponsiveModalTitle>
       </ResponsiveModalHeader>
-      <ResponsiveModalBody className="space-y-3 p-4 sm:p-0">
-        {details.map(
-          (item) =>
-            item.value !== null &&
-            item.value !== undefined && (
-              <div key={item.label} className="flex flex-col gap-0.5">
-                <span className="text-xs text-muted-foreground">{item.label}</span>
-                <span
-                  className={`text-sm ${item.highlight ? (transaction.amount >= 0 ? "text-success font-medium" : "font-medium") : ""}`}
-                >
-                  {item.value}
-                </span>
-              </div>
-            )
+      <ResponsiveModalBody className="space-y-4 p-4 sm:p-0">
+        {/* Amount - Prominent */}
+        <div className="text-center py-2">
+          <p
+            className={`text-3xl font-semibold tabular-nums ${
+              transaction.amount >= 0 ? "text-success" : ""
+            }`}
+          >
+            {transaction.amount >= 0 ? "+" : ""}
+            {formatCurrency(transaction.amount)}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {formatDate(transaction.date)}
+          </p>
+        </div>
+
+        {/* Category Select - Editable */}
+        {categories.length > 0 && onCategoryChange && (
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Category</label>
+            <Select
+              value={transaction.categoryId || ""}
+              onValueChange={(value) => {
+                if (value) {
+                  onCategoryChange(transaction, value);
+                }
+              }}
+            >
+              <SelectTrigger
+                className="w-full h-10 border-l-4"
+                style={{ borderLeftColor: currentCategory?.color || "#888" }}
+              >
+                <SelectValue placeholder="Select category..." />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: cat.color }}
+                      />
+                      {cat.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
+
+        {/* Description */}
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground">Description</label>
+          <p className="text-sm">{transaction.description}</p>
+        </div>
+
+        {/* Additional Details */}
+        <div className="border-t border-border pt-3 space-y-2">
+          {transaction.merchant && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Merchant</span>
+              <span>{transaction.merchant}</span>
+            </div>
+          )}
+          {transaction.bankName && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Bank</span>
+              <span>{transaction.bankName}</span>
+            </div>
+          )}
+          {transaction.balance !== undefined && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Balance</span>
+              <span>{formatCurrency(transaction.balance)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Status</span>
+            <span>
+              {transaction.needsReview ? (
+                <span className="text-warning">Needs Review</span>
+              ) : (
+                "Categorized"
+              )}
+            </span>
+          </div>
+        </div>
       </ResponsiveModalBody>
     </ResponsiveModal>
   );

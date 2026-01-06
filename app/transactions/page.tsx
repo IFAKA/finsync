@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,34 +57,51 @@ function TransactionsContent() {
 
   // Initialize filters with URL params
   const initialCategory = searchParams.get("category") || "all";
-  const initialMonth = searchParams.get("month") || null;
+  const urlMonth = searchParams.get("month");
+  const initialNeedsAttention = searchParams.get("attention") === "true";
 
-  // Fetch transactions based on filters
-  const {
-    selectedCategory,
-    selectedMonth,
-    handleCategoryFilterChange,
-    handleMonthFilterChange,
-    ...filterState
-  } = useTransactionFilters({
-    initialCategory,
-    initialMonth,
-    availableMonths,
-    allTransactions: [], // Will be replaced below
-  });
+  // If no month specified in URL and not viewing needs attention, default to most recent month
+  const initialMonth = urlMonth || (initialNeedsAttention ? null : (availableMonths[0] || null));
+  const initialSearch = searchParams.get("search") || "";
+  const initialSortBy = (searchParams.get("sort") as "date" | "amount") || "date";
+  const initialPage = Math.max(0, parseInt(searchParams.get("page") || "1", 10) - 1);
+
+  // Lift filter state that affects data fetching to component level (single source of truth)
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(initialMonth);
+  const [needsAttention, setNeedsAttention] = useState(initialNeedsAttention);
+
+  // Default to most recent month if no month specified
+  useEffect(() => {
+    if (availableMonths.length > 0 && selectedMonth === null) {
+      setSelectedMonth(availableMonths[0]);
+    } else if (availableMonths.length === 0 && selectedMonth === null) {
+      setSelectedMonth("all");
+    }
+  }, [availableMonths, selectedMonth]);
+
+  // Memoize options for useTransactions to prevent unnecessary re-queries
+  const transactionOptions = useMemo(() => ({
+    categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
+    month: needsAttention ? undefined : (selectedMonth && selectedMonth !== "all" ? selectedMonth : undefined),
+  }), [selectedCategory, selectedMonth, needsAttention]);
 
   // Fetch transactions with current filters
-  const { data: allTransactions, isLoading: transactionsLoading } = useTransactions({
-    categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
-    month: selectedMonth && selectedMonth !== "all" ? selectedMonth : undefined,
-  });
+  const { data: allTransactions, isLoading: transactionsLoading } = useTransactions(transactionOptions);
 
-  // Re-run filters with actual transactions
+  // Single filter hook with callbacks to sync state
   const filters = useTransactionFilters({
     initialCategory,
     initialMonth,
+    initialSearch,
+    initialSortBy,
+    initialPage,
+    initialNeedsAttention,
     availableMonths,
     allTransactions,
+    onCategoryChange: setSelectedCategory,
+    onMonthChange: setSelectedMonth,
+    onNeedsAttentionChange: setNeedsAttention,
   });
 
   // Similar transaction flow (for rule creation)
@@ -104,19 +121,16 @@ function TransactionsContent() {
         search={filters.search}
         selectedCategory={filters.selectedCategory}
         sortBy={filters.sortBy}
+        needsAttention={filters.needsAttention}
         categories={categories}
         hasFilters={filters.hasFilters}
         onNavigateMonth={filters.navigateMonth}
         onToggleFilters={() => setShowFilters(!showFilters)}
-        onSearchChange={(value) => {
-          filters.setSearch(value);
-          filters.setPage(0);
-        }}
+        onSearchChange={filters.setSearch}
         onCategoryChange={filters.handleCategoryFilterChange}
-        onSortChange={(value) => {
-          filters.setSortBy(value);
-          filters.setPage(0);
-        }}
+        onMonthChange={filters.handleMonthFilterChange}
+        onSortChange={filters.setSortBy}
+        onNeedsAttentionChange={filters.setNeedsAttention}
         onClearFilters={filters.clearFilters}
       />
 
@@ -126,19 +140,15 @@ function TransactionsContent() {
         selectedCategory={filters.selectedCategory}
         selectedMonth={filters.selectedMonth}
         sortBy={filters.sortBy}
+        needsAttention={filters.needsAttention}
         categories={categories}
         availableMonths={availableMonths}
         hasFilters={filters.hasFilters}
-        onSearchChange={(value) => {
-          filters.setSearch(value);
-          filters.setPage(0);
-        }}
+        onSearchChange={filters.setSearch}
         onCategoryChange={filters.handleCategoryFilterChange}
         onMonthChange={filters.handleMonthFilterChange}
-        onSortChange={(value) => {
-          filters.setSortBy(value);
-          filters.setPage(0);
-        }}
+        onSortChange={filters.setSortBy}
+        onNeedsAttentionChange={filters.setNeedsAttention}
         onClearFilters={filters.clearFilters}
       />
 
@@ -179,6 +189,14 @@ function TransactionsContent() {
         open={!!selectedTransaction}
         onOpenChange={(open) => !open && setSelectedTransaction(null)}
         transaction={selectedTransaction}
+        categories={categories}
+        onCategoryChange={(t, categoryId) => {
+          similarFlow.handleCategoryChange(t, categoryId);
+          // Update the selected transaction state to reflect the change
+          setSelectedTransaction((prev) =>
+            prev && prev.id === t.id ? { ...prev, categoryId } : prev
+          );
+        }}
       />
     </div>
   );
