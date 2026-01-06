@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { initializeLocalDB } from "@/lib/db/sync";
+import { initializeLocalDB, deduplicateCategories } from "@/lib/db/sync";
 
 // Initialize database on first use
 let dbInitialized = false;
@@ -11,9 +11,11 @@ export function ensureDbInitialized(): Promise<void> {
   if (dbInitialized) return Promise.resolve();
   if (initPromise) return initPromise;
 
-  initPromise = initializeLocalDB().then(() => {
-    dbInitialized = true;
-  });
+  initPromise = initializeLocalDB()
+    .then(() => deduplicateCategories()) // Clean up any duplicate categories
+    .then(() => {
+      dbInitialized = true;
+    });
 
   return initPromise;
 }

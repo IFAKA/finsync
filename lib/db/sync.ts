@@ -84,9 +84,35 @@ export async function mergeChanges(data: {
 
   if (data.categories) {
     for (const incoming of data.categories) {
-      const existing = await db.categories.get(incoming.id);
-      if (!existing || incoming._lastModified > existing._lastModified) {
-        await db.categories.put(incoming);
+      // First check if category exists by ID
+      const existingById = await db.categories.get(incoming.id);
+      if (existingById) {
+        // Same ID - use last-write-wins
+        if (incoming._lastModified > existingById._lastModified) {
+          await db.categories.put(incoming);
+        }
+      } else {
+        // Check if a category with the same name already exists (prevent duplicates)
+        const existingByName = await db.categories
+          .filter((c) => c.name === incoming.name && !c._deleted)
+          .first();
+
+        if (existingByName) {
+          // Category with same name exists - update existing if incoming is newer
+          if (incoming._lastModified > existingByName._lastModified) {
+            // Update existing category with incoming data but keep the existing ID
+            await db.categories.update(existingByName.id, {
+              color: incoming.color,
+              icon: incoming.icon,
+              isSystem: incoming.isSystem,
+              _lastModified: incoming._lastModified,
+            });
+          }
+          // Skip adding the incoming category since we already have one with this name
+        } else {
+          // New category - add it
+          await db.categories.put(incoming);
+        }
       }
     }
   }
@@ -182,4 +208,62 @@ export async function resetAllData(): Promise<void> {
 
   // Re-initialize default categories
   await initializeLocalDB();
+}
+
+// Deduplicate categories by name and update all references
+export async function deduplicateCategories(): Promise<number> {
+  const db = getLocalDB();
+  const now = new Date();
+
+  // Get all non-deleted categories
+  const allCategories = await db.categories.filter((c) => !c._deleted).toArray();
+
+  // Group by name
+  const categoryGroups = new Map<string, LocalCategory[]>();
+  for (const cat of allCategories) {
+    const existing = categoryGroups.get(cat.name) || [];
+    existing.push(cat);
+    categoryGroups.set(cat.name, existing);
+  }
+
+  let duplicatesRemoved = 0;
+
+  for (const [, cats] of categoryGroups) {
+    if (cats.length <= 1) continue;
+
+    // Sort by createdAt to keep the oldest one
+    cats.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    const keepCategory = cats[0];
+    const duplicatesToRemove = cats.slice(1);
+
+    for (const duplicate of duplicatesToRemove) {
+      // Update transactions pointing to duplicate
+      await db.transactions
+        .where("categoryId")
+        .equals(duplicate.id)
+        .modify({ categoryId: keepCategory.id, _lastModified: now });
+
+      // Update budgets pointing to duplicate
+      await db.budgets
+        .where("categoryId")
+        .equals(duplicate.id)
+        .modify({ categoryId: keepCategory.id, _lastModified: now });
+
+      // Update rules pointing to duplicate
+      await db.rules
+        .where("categoryId")
+        .equals(duplicate.id)
+        .modify({ categoryId: keepCategory.id, _lastModified: now });
+
+      // Soft delete the duplicate category
+      await db.categories.update(duplicate.id, {
+        _deleted: true,
+        _lastModified: now,
+      });
+
+      duplicatesRemoved++;
+    }
+  }
+
+  return duplicatesRemoved;
 }

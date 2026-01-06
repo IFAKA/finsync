@@ -53,6 +53,7 @@ export {
   getSyncState,
   updateSyncState,
   resetAllData,
+  deduplicateCategories,
 } from "./sync";
 
 // Backward compatible localDB object
@@ -104,6 +105,7 @@ export const localDB = {
   getSyncState: sync.getSyncState,
   updateSyncState: sync.updateSyncState,
   resetAllData: sync.resetAllData,
+  deduplicateCategories: sync.deduplicateCategories,
 };
 
 export type LocalDB = typeof localDB;
