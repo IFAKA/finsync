@@ -6,7 +6,7 @@ import {
   ConnectionState,
   getPeerManager,
 } from "@/lib/p2p/peer-manager";
-import { initializeLocalDB, localDB } from "@/lib/db/local-db";
+import { initializeLocalDB, localDB } from "@/lib/db";
 
 export interface UseP2PSyncReturn {
   // State

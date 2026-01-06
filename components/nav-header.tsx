@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { soundSystem, playSound } from "@/lib/sounds";
 import { SyncStatus } from "@/components/sync-status";
-import { localDB } from "@/lib/db/local-db";
+import { localDB } from "@/lib/db";
 import { toast } from "sonner";
 import { useOnboarding } from "@/lib/contexts/onboarding-context";
 import {

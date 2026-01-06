@@ -1,31 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { ArrowLeft, Loader2, Sparkles, Download } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/utils";
-import { useTransactionMutations, useCategories, useRules } from "@/lib/hooks/use-local-db";
-import { generateId, localDB } from "@/lib/db/local-db";
-import { playSound } from "@/lib/sounds";
 import {
-  categorizeTransactionsWithWebLLM,
-  isModelLoaded,
-  isModelLoading,
-  initWebLLM,
-  applyRules,
-  type CategoryExample,
-  type Rule,
-} from "@/lib/ai/web-llm";
-
-interface ParsedTransaction {
-  date: string;
-  description: string;
-  amount: number;
-  balance?: number;
-  notes?: string;
-  movementType?: string;
-}
+  useTransactionImport,
+  PreviewTable,
+  type ParsedTransaction,
+} from "./transaction-preview/index";
 
 interface TransactionPreviewProps {
   filename: string;
@@ -42,326 +23,32 @@ export function TransactionPreview({
   onBack,
   onImportComplete,
 }: TransactionPreviewProps) {
-  const [isImporting, setIsImporting] = useState(false);
-  const [isCategorizing, setIsCategorizing] = useState(false);
-  const [isPreloadingModel, setIsPreloadingModel] = useState(false);
-  const [modelReady, setModelReady] = useState(isModelLoaded());
-  const [status, setStatus] = useState<string>("");
-  const [aiProgress, setAiProgress] = useState<string>("");
-  const [duplicateIndices, setDuplicateIndices] = useState<Set<number>>(new Set());
-  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(true);
+  const {
+    isImporting,
+    isCategorizing,
+    isPreloadingModel,
+    isCheckingDuplicates,
+    status,
+    aiProgress,
+    uniqueTransactions,
+    duplicateCount,
+    handleImport,
+  } = useTransactionImport({
+    filename,
+    bankName,
+    transactions,
+    onImportComplete,
+  });
 
-  const { bulkCreate } = useTransactionMutations();
-  const { data: categories } = useCategories();
-  const { data: rules } = useRules();
-
-  // Check for duplicates when component mounts
-  useEffect(() => {
-    const checkDuplicates = async () => {
-      setIsCheckingDuplicates(true);
-      try {
-        const duplicates = await localDB.findDuplicates(
-          transactions.map((t) => ({
-            date: new Date(t.date),
-            amount: t.amount,
-            description: t.description,
-          }))
-        );
-        setDuplicateIndices(duplicates);
-      } catch (error) {
-        console.error("Failed to check duplicates:", error);
-      }
-      setIsCheckingDuplicates(false);
-    };
-    checkDuplicates();
-  }, [transactions]);
-
-  // Preload AI model when component mounts (if categories exist)
-  useEffect(() => {
-    if (categories.length > 0 && !isModelLoaded() && !isModelLoading()) {
-      setIsPreloadingModel(true);
-      setAiProgress("Loading AI model for categorization...");
-      initWebLLM((progress) => {
-        setAiProgress(progress.text);
-        if (progress.stage === "ready") {
-          setModelReady(true);
-          setIsPreloadingModel(false);
-          setAiProgress("");
-        }
-      }).catch(() => {
-        setIsPreloadingModel(false);
-        setAiProgress("");
-      });
-    }
-  }, [categories.length]);
-
-  // Filter out duplicates
-  const uniqueTransactions = transactions.filter((_, i) => !duplicateIndices.has(i));
-
-  const handleImport = async () => {
-    if (uniqueTransactions.length === 0) {
-      toast.error("No new transactions to import - all are duplicates");
-      return;
-    }
-
-    setIsImporting(true);
-    const batchId = generateId();
-
-    try {
-      // Prepare transactions in memory
-      const transactionsToSave = uniqueTransactions.map((t) => {
-        const rawDescription = t.notes
-          ? `${t.description} | ${t.notes}`
-          : t.description;
-
-        return {
-          date: new Date(t.date),
-          description: t.description,
-          rawDescription,
-          amount: t.amount,
-          balance: t.balance,
-          isRecurring: false,
-          needsReview: true,
-          importBatchId: batchId,
-          sourceFile: filename,
-          bankName: bankName || undefined,
-          // Will be filled by categorization
-          categoryId: undefined as string | undefined,
-          categoryConfidence: undefined as number | undefined,
-          merchant: undefined as string | undefined,
-        };
-      });
-
-      // Step 1: Categorize (rules first, then AI for remaining)
-      if (categories.length > 0) {
-        setIsCategorizing(true);
-        const categoryNames = categories.map((c) => c.name);
-        const categoryMap = new Map(categories.map((c) => [c.name, c.id]));
-        const categoryIdToName = new Map(categories.map((c) => [c.id, c.name]));
-
-        let ruleMatchCount = 0;
-        let aiMatchCount = 0;
-
-        // Step 1a: Apply rules first (instant, 100% confidence)
-        if (rules.length > 0) {
-          setStatus("Applying rules…");
-          const rulesForMatching: Rule[] = rules.map((r) => ({
-            id: r.id,
-            categoryId: r.categoryId,
-            descriptionContains: r.descriptionContains,
-            amountEquals: r.amountEquals,
-            amountMin: r.amountMin,
-            amountMax: r.amountMax,
-            isEnabled: r.isEnabled,
-            priority: r.priority,
-          }));
-
-          const { matches: ruleMatches, unmatchedIndices } = applyRules(
-            transactionsToSave.map((t) => ({
-              description: t.rawDescription,
-              amount: t.amount,
-            })),
-            rulesForMatching
-          );
-
-          // Apply rule matches
-          for (const match of ruleMatches) {
-            const tx = transactionsToSave[match.index - 1];
-            if (tx) {
-              tx.categoryId = match.categoryId;
-              tx.categoryConfidence = 1.0;
-              tx.needsReview = false; // Rules are trusted
-              ruleMatchCount++;
-            }
-          }
-
-          // Step 1b: Use AI for remaining unmatched transactions
-          if (unmatchedIndices.length > 0) {
-            // Wait for model to be ready if it's still loading
-            if (!modelReady) {
-              setStatus("Loading AI model…");
-              await initWebLLM((progress) => {
-                setAiProgress(progress.text);
-              });
-            }
-
-            setStatus(`Categorizing ${unmatchedIndices.length} with AI…`);
-
-            try {
-              // Get examples from past categorized transactions
-              const existingTxs = await localDB.getTransactions();
-              const categorizedTxs = existingTxs.filter((t) => t.categoryId && t.categoryConfidence && t.categoryConfidence >= 0.8);
-
-              const examplesByCategory = new Map<string, string[]>();
-              for (const tx of categorizedTxs.slice(-200)) { // Last 200 transactions
-                const catName = categoryIdToName.get(tx.categoryId!);
-                if (catName) {
-                  const examples = examplesByCategory.get(catName) || [];
-                  if (examples.length < 5) {
-                    examples.push(tx.description);
-                    examplesByCategory.set(catName, examples);
-                  }
-                }
-              }
-
-              const categoryExamples: CategoryExample[] = Array.from(examplesByCategory.entries()).map(
-                ([category, examples]) => ({ category, examples })
-              );
-
-              // Only categorize unmatched transactions
-              const unmatchedTxs = unmatchedIndices.map((i) => ({
-                description: transactionsToSave[i].rawDescription,
-                amount: transactionsToSave[i].amount,
-                date: transactionsToSave[i].date.toISOString().split("T")[0],
-                originalIndex: i,
-              }));
-
-              const results = await categorizeTransactionsWithWebLLM(
-                unmatchedTxs.map((t) => ({
-                  description: t.description,
-                  amount: t.amount,
-                  date: t.date,
-                })),
-                categoryNames,
-                (progress) => {
-                  setAiProgress(progress.text);
-                },
-                categoryExamples
-              );
-
-              // Apply AI categories (using originalIndex to map back)
-              for (const result of results) {
-                const originalIndex = unmatchedTxs[result.index - 1]?.originalIndex;
-                if (originalIndex !== undefined) {
-                  const tx = transactionsToSave[originalIndex];
-                  if (tx) {
-                    const categoryId = categoryMap.get(result.category);
-                    if (categoryId) {
-                      tx.categoryId = categoryId;
-                      tx.categoryConfidence = result.confidence;
-                      tx.merchant = result.merchant;
-                      tx.needsReview = result.confidence < 0.7;
-                      aiMatchCount++;
-                    }
-                  }
-                }
-              }
-            } catch (error) {
-              console.error("AI categorization failed:", error);
-              // Don't abort - we already have rule matches
-              toast.warning("AI categorization failed, using rules only");
-            }
-          }
-        } else {
-          // No rules, use AI for everything
-          if (!modelReady) {
-            setStatus("Loading AI model…");
-            await initWebLLM((progress) => {
-              setAiProgress(progress.text);
-            });
-          }
-
-          setStatus("Categorizing with AI…");
-
-          try {
-            // Get examples from past categorized transactions
-            const existingTxs = await localDB.getTransactions();
-            const categorizedTxs = existingTxs.filter((t) => t.categoryId && t.categoryConfidence && t.categoryConfidence >= 0.8);
-
-            const examplesByCategory = new Map<string, string[]>();
-            for (const tx of categorizedTxs.slice(-200)) {
-              const catName = categoryIdToName.get(tx.categoryId!);
-              if (catName) {
-                const examples = examplesByCategory.get(catName) || [];
-                if (examples.length < 5) {
-                  examples.push(tx.description);
-                  examplesByCategory.set(catName, examples);
-                }
-              }
-            }
-
-            const categoryExamples: CategoryExample[] = Array.from(examplesByCategory.entries()).map(
-              ([category, examples]) => ({ category, examples })
-            );
-
-            const results = await categorizeTransactionsWithWebLLM(
-              transactionsToSave.map((t) => ({
-                description: t.rawDescription,
-                amount: t.amount,
-                date: t.date.toISOString().split("T")[0],
-              })),
-              categoryNames,
-              (progress) => {
-                setAiProgress(progress.text);
-              },
-              categoryExamples
-            );
-
-            for (const result of results) {
-              const tx = transactionsToSave[result.index - 1];
-              if (tx) {
-                const categoryId = categoryMap.get(result.category);
-                if (categoryId) {
-                  tx.categoryId = categoryId;
-                  tx.categoryConfidence = result.confidence;
-                  tx.merchant = result.merchant;
-                  tx.needsReview = result.confidence < 0.7;
-                  aiMatchCount++;
-                }
-              }
-            }
-          } catch (error) {
-            console.error("Categorization failed:", error);
-            setStatus("Categorization failed");
-            setAiProgress("");
-            setIsCategorizing(false);
-            setIsImporting(false);
-            toast.error("Categorization failed - import aborted");
-            playSound("error");
-            return;
-          }
-        }
-
-        setIsCategorizing(false);
-      }
-
-      // Step 2: Save everything at once
-      setStatus("Saving transactions…");
-      const created = await bulkCreate(transactionsToSave);
-
-      const categorizedCount = created.filter((t) => t.categoryId).length;
-
-      if (categorizedCount > 0) {
-        setStatus(`Done! Imported ${created.length}, categorized ${categorizedCount}`);
-        toast.success(`Imported ${created.length} and categorized ${categorizedCount}`);
-      } else {
-        setStatus(`Imported ${created.length} transactions`);
-        toast.success(`Imported ${created.length} transactions`);
-      }
-      playSound("success");
-
-      // Wait a bit before completing to show final status
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      onImportComplete();
-    } catch {
-      setStatus("Import failed");
-      toast.error("Import failed");
-      playSound("error");
-      setIsImporting(false);
-      setIsCategorizing(false);
-    }
-  };
-
-  const dates = uniqueTransactions.length > 0
-    ? uniqueTransactions.map((t) => new Date(t.date))
-    : transactions.map((t) => new Date(t.date));
+  const dates =
+    uniqueTransactions.length > 0
+      ? uniqueTransactions.map((t) => new Date(t.date))
+      : transactions.map((t) => new Date(t.date));
   const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
   const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
 
   const formatShortDate = (date: Date) =>
     date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-
-  const duplicateCount = duplicateIndices.size;
 
   return (
     <div className="space-y-6">
@@ -375,7 +62,12 @@ export function TransactionPreview({
         </button>
         <Button
           onClick={handleImport}
-          disabled={isImporting || isCategorizing || isCheckingDuplicates || uniqueTransactions.length === 0}
+          disabled={
+            isImporting ||
+            isCategorizing ||
+            isCheckingDuplicates ||
+            uniqueTransactions.length === 0
+          }
         >
           {isImporting || isCategorizing ? (
             <>
@@ -404,12 +96,15 @@ export function TransactionPreview({
         </p>
         {duplicateCount > 0 && !isCheckingDuplicates && (
           <p className="text-sm text-warning mt-1">
-            {duplicateCount} duplicate{duplicateCount > 1 ? "s" : ""} found (will be skipped)
+            {duplicateCount} duplicate{duplicateCount > 1 ? "s" : ""} found (will
+            be skipped)
           </p>
         )}
         {status && (
           <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
-            {(isImporting || isCategorizing) && <Sparkles className="w-4 h-4 animate-pulse" />}
+            {(isImporting || isCategorizing) && (
+              <Sparkles className="w-4 h-4 animate-pulse" />
+            )}
             {status}
           </p>
         )}
@@ -421,51 +116,7 @@ export function TransactionPreview({
         )}
       </div>
 
-      <div className="border border-border rounded-lg overflow-hidden max-h-[40vh] overflow-y-auto">
-        <table className="w-full">
-          <thead className="sticky top-0 bg-background">
-            <tr className="border-b border-border">
-              <th className="text-left text-xs font-medium text-muted-foreground p-3">
-                Date
-              </th>
-              <th className="text-left text-xs font-medium text-muted-foreground p-3">
-                Description
-              </th>
-              <th className="text-right text-xs font-medium text-muted-foreground p-3">
-                Amount
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {uniqueTransactions.slice(0, 10).map((t, i) => (
-              <tr
-                key={i}
-                className="border-b border-border last:border-0 transition-colors hover:bg-muted/5"
-              >
-                <td className="p-3 text-sm text-muted-foreground whitespace-nowrap">
-                  {formatShortDate(new Date(t.date))}
-                </td>
-                <td className="p-3 text-sm truncate max-w-[200px]">
-                  {t.description}
-                </td>
-                <td
-                  className={`p-3 text-sm text-right tabular-nums whitespace-nowrap ${
-                    t.amount >= 0 ? "text-success" : ""
-                  }`}
-                >
-                  {t.amount >= 0 ? "+" : ""}
-                  {formatCurrency(t.amount)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {uniqueTransactions.length > 10 && (
-        <p className="text-sm text-muted-foreground text-center">
-          + {uniqueTransactions.length - 10} more transactions
-        </p>
-      )}
+      <PreviewTable transactions={uniqueTransactions} maxRows={10} />
     </div>
   );
 }

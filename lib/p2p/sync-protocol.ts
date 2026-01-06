@@ -3,7 +3,7 @@ import type {
   LocalTransaction,
   LocalBudget,
   LocalRule,
-} from "@/lib/db/local-db";
+} from "@/lib/db";
 
 /**
  * Sync message types for P2P communication

@@ -8,7 +8,7 @@ import {
   createSyncDataMessage,
   createAckMessage,
 } from "./sync-protocol";
-import { localDB, getDeviceId } from "@/lib/db/local-db";
+import { localDB, getDeviceId } from "@/lib/db";
 
 // ICE servers for NAT traversal (needed for cross-network connections)
 // STUN servers help discover public IP, TURN servers relay when direct P2P fails

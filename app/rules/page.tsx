@@ -13,7 +13,7 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from "@/components/ui/responsive-modal";
-import { useRules, useCategories, useRuleMutations } from "@/lib/hooks/use-local-db";
+import { useRules, useCategories, useRuleMutations } from "@/lib/hooks/db";
 import { formatCurrency } from "@/lib/utils";
 import { playSound } from "@/lib/sounds";
 

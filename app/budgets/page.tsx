@@ -15,7 +15,7 @@ import {
   useBudgets,
   useMonthlySummary,
   useBudgetMutations,
-} from "@/lib/hooks/use-local-db";
+} from "@/lib/hooks/db";
 import { formatCurrency } from "@/lib/utils";
 import { playSound } from "@/lib/sounds";
 

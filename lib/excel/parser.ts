@@ -209,13 +209,22 @@ function buildRichDescription(
 }
 
 function parseDate(value: unknown): Date | null {
-  if (value instanceof Date) return value;
+  // Create date at noon UTC to avoid timezone edge cases
+  // This ensures the date doesn't shift when stored/retrieved from IndexedDB
+  const createDate = (year: number, month: number, day: number): Date => {
+    return new Date(Date.UTC(year, month, day, 12, 0, 0));
+  };
+
+  if (value instanceof Date) {
+    // Re-create at noon UTC to normalize
+    return createDate(value.getFullYear(), value.getMonth(), value.getDate());
+  }
 
   if (typeof value === "number") {
     // Excel serial date
     const date = XLSX.SSF.parse_date_code(value);
     if (date) {
-      return new Date(date.y, date.m - 1, date.d);
+      return createDate(date.y, date.m - 1, date.d);
     }
     return null;
   }
@@ -232,9 +241,9 @@ function parseDate(value: unknown): Date | null {
       const match = value.match(format);
       if (match) {
         if (format.source.startsWith("^(\\d{4})")) {
-          return new Date(+match[1], +match[2] - 1, +match[3]);
+          return createDate(+match[1], +match[2] - 1, +match[3]);
         } else {
-          return new Date(+match[3], +match[2] - 1, +match[1]);
+          return createDate(+match[3], +match[2] - 1, +match[1]);
         }
       }
     }
@@ -242,7 +251,7 @@ function parseDate(value: unknown): Date | null {
     // Try native Date parse as fallback
     const parsed = new Date(value);
     if (!isNaN(parsed.getTime())) {
-      return parsed;
+      return createDate(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
     }
   }
 
