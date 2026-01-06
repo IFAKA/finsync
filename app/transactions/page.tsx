@@ -149,9 +149,9 @@ function TransactionsContent() {
         onCategoryChange={similarFlow.handleCategoryChange}
       />
 
-      {/* Similar Transactions Pill */}
+      {/* Similar Transactions Pill - hidden when dialog is open (mobile shows inline UI) */}
       <AnimatePresence>
-        {similarFlow.recentlyCategorized && !similarFlow.showCreateRuleModal && (
+        {similarFlow.recentlyCategorized && !similarFlow.showCreateRuleModal && !selectedTransaction && (
           <SimilarTransactionsPill
             similarCount={similarFlow.recentlyCategorized.similarCount}
             onCreateRule={similarFlow.handlePillClick}
@@ -182,6 +182,16 @@ function TransactionsContent() {
             prev && prev.id === t.id ? { ...prev, categoryId } : prev
           );
         }}
+        similarTransactionsInfo={
+          similarFlow.recentlyCategorized
+            ? {
+                transactionId: similarFlow.recentlyCategorized.transaction.id,
+                similarCount: similarFlow.recentlyCategorized.similarCount,
+              }
+            : null
+        }
+        onCreateRule={similarFlow.handlePillClick}
+        onDismissSimilar={similarFlow.handlePillDismiss}
       />
     </div>
   );
