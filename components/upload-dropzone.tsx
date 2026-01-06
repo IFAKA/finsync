@@ -7,19 +7,15 @@ import { cn } from "@/lib/utils";
 import { playSound } from "@/lib/sounds";
 import { parseExcelBuffer } from "@/lib/excel/parser";
 
-interface ParsedTransaction {
-  date: string;
-  description: string;
-  amount: number;
-  balance?: number;
-}
-
-interface UploadResult {
-  success: boolean;
+export interface UploadResult {
   filename: string;
   bankName: string | null;
-  transactionCount: number;
-  transactions: ParsedTransaction[];
+  transactions: Array<{
+    date: string;
+    description: string;
+    amount: number;
+    balance?: number;
+  }>;
 }
 
 interface UploadDropzoneProps {
@@ -72,10 +68,8 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         const result = await parseExcelBuffer(buffer, file.name);
 
         onUploadComplete({
-          success: true,
           filename: result.filename,
           bankName: result.bankFormat?.name || null,
-          transactionCount: result.transactions.length,
           transactions: result.transactions.map((t) => ({
             date: t.date.toISOString(),
             description: t.description,

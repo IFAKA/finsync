@@ -364,6 +364,54 @@ export const localDB = {
     return created;
   },
 
+  // Check for duplicate transactions based on date, amount, and description
+  async findDuplicates(
+    transactions: { date: Date; amount: number; description: string }[]
+  ): Promise<Set<number>> {
+    const db = getLocalDB();
+    const duplicateIndices = new Set<number>();
+
+    // Get all existing transactions (non-deleted)
+    const existing = await db.transactions.filter((t) => !t._deleted).toArray();
+
+    // Create a map for quick lookup: key = date+amount
+    const existingMap = new Map<string, LocalTransaction[]>();
+    for (const tx of existing) {
+      const dateStr = tx.date.toISOString().split("T")[0];
+      const key = `${dateStr}|${tx.amount}`;
+      const list = existingMap.get(key) || [];
+      list.push(tx);
+      existingMap.set(key, list);
+    }
+
+    // Check each incoming transaction
+    for (let i = 0; i < transactions.length; i++) {
+      const tx = transactions[i];
+      const dateStr = tx.date.toISOString().split("T")[0];
+      const key = `${dateStr}|${tx.amount}`;
+
+      const matches = existingMap.get(key);
+      if (matches) {
+        // Check if description is similar (case-insensitive, ignoring extra whitespace)
+        const normalizedDesc = tx.description.toLowerCase().trim().replace(/\s+/g, " ");
+        for (const match of matches) {
+          const existingDesc = match.description.toLowerCase().trim().replace(/\s+/g, " ");
+          // Consider duplicate if descriptions match or one contains the other
+          if (
+            normalizedDesc === existingDesc ||
+            normalizedDesc.includes(existingDesc) ||
+            existingDesc.includes(normalizedDesc)
+          ) {
+            duplicateIndices.add(i);
+            break;
+          }
+        }
+      }
+    }
+
+    return duplicateIndices;
+  },
+
   // Budgets
   async getBudgets(month?: string): Promise<LocalBudget[]> {
     const db = getLocalDB();
@@ -618,6 +666,32 @@ export const localDB = {
         })
       ),
     };
+  },
+
+  // Reset all data (fresh start)
+  async resetAllData(): Promise<void> {
+    const db = getLocalDB();
+
+    // Clear all tables
+    await Promise.all([
+      db.categories.clear(),
+      db.transactions.clear(),
+      db.budgets.clear(),
+      db.rules.clear(),
+    ]);
+
+    // Reset sync state but keep device ID
+    const currentState = await db.syncState.get("main");
+    const deviceId = currentState?.deviceId || generateId();
+    await db.syncState.put({
+      id: "main",
+      deviceId,
+      lastSyncTimestamp: undefined,
+      roomCode: undefined,
+    });
+
+    // Re-initialize default categories
+    await initializeLocalDB();
   },
 };
 

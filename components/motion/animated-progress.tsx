@@ -55,7 +55,6 @@ export function AnimatedProgress({
       const timer = setTimeout(() => {
         spring.set(percentage);
 
-        // Play sound based on budget status
         if (enableSound && percentage >= 100) {
           playSound("warning");
         } else if (enableSound && percentage >= 80) {
@@ -70,14 +69,12 @@ export function AnimatedProgress({
     }
   }, [isInView, percentage, spring, enableSound, onComplete]);
 
-  // Update when value changes
   useEffect(() => {
     if (isInView) {
       spring.set(percentage);
     }
   }, [percentage, spring, isInView]);
 
-  // Determine color based on percentage
   const getIndicatorColor = () => {
     if (percentage >= 100) return "bg-error";
     if (percentage >= 80) return "bg-warning";
@@ -111,70 +108,6 @@ export function AnimatedProgress({
             ? `${Math.round(percentage)}%`
             : `${value} / ${max}`}
         </motion.span>
-      )}
-    </div>
-  );
-}
-
-interface BudgetProgressProps {
-  spent: number;
-  budget: number;
-  className?: string;
-  showLabels?: boolean;
-  currency?: string;
-  locale?: string;
-}
-
-/**
- * BudgetProgress - Specialized progress for budget tracking
- * Includes labels and color-coded status
- */
-export function BudgetProgress({
-  spent,
-  budget,
-  className,
-  showLabels = true,
-  currency = "EUR",
-  locale = "es-ES",
-}: BudgetProgressProps) {
-  const percentage = budget > 0 ? (spent / budget) * 100 : 0;
-  const remaining = budget - spent;
-  const isOverBudget = spent > budget;
-
-  const formatAmount = (amount: number) =>
-    new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(Math.abs(amount));
-
-  return (
-    <div className={cn("space-y-2", className)}>
-      <AnimatedProgress
-        value={spent}
-        max={budget}
-        height="md"
-        enableSound={true}
-      />
-      {showLabels && (
-        <div className="flex justify-between text-xs">
-          <span className="text-muted-foreground">
-            {formatAmount(spent)} spent
-          </span>
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={cn(
-              "font-medium",
-              isOverBudget ? "text-error" : "text-muted-foreground"
-            )}
-          >
-            {isOverBudget
-              ? `${formatAmount(Math.abs(remaining))} over`
-              : `${formatAmount(remaining)} left`}
-          </motion.span>
-        </div>
       )}
     </div>
   );

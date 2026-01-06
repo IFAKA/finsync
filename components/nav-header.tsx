@@ -2,18 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { soundSystem, playSound } from "@/lib/sounds";
 import { SyncStatus } from "@/components/sync-status";
+import { localDB } from "@/lib/db/local-db";
+import { toast } from "sonner";
+import { useOnboarding } from "@/lib/contexts/onboarding-context";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   LayoutDashboardIcon,
   ArrowLeftRightIcon,
@@ -63,8 +68,11 @@ function NavItem({ href, label, Icon }: { href: string; label: string; Icon: typ
 }
 
 export function NavHeader() {
+  const { resetOnboarding } = useOnboarding();
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [settingsHovered, setSettingsHovered] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     setSoundEnabled(soundSystem.isEnabled());
@@ -76,6 +84,24 @@ export function NavHeader() {
     soundSystem.setEnabled(newState);
     if (newState) {
       playSound("toggle");
+    }
+  };
+
+  const handleReset = async () => {
+    setIsResetting(true);
+    try {
+      await localDB.resetAllData();
+      resetOnboarding();
+      toast.success("All data has been reset");
+      playSound("delete");
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Failed to reset data:", error);
+      toast.error("Failed to reset data");
+      playSound("error");
+    } finally {
+      setIsResetting(false);
+      setShowResetDialog(false);
     }
   };
 
@@ -133,11 +159,30 @@ export function NavHeader() {
                     </>
                   )}
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setShowResetDialog(true)}
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Reset all data
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showResetDialog}
+        onOpenChange={setShowResetDialog}
+        title="Reset all data?"
+        description="This will permanently delete all your transactions, budgets, and rules. Default categories will be restored. This action cannot be undone."
+        confirmLabel={isResetting ? "Resetting..." : "Reset everything"}
+        variant="destructive"
+        onConfirm={handleReset}
+        isLoading={isResetting}
+      />
     </header>
   );
 }

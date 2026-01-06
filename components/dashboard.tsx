@@ -143,13 +143,13 @@ function BentoMobileDashboard({
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.05 }}
           onClick={() => router.push(`/transactions?month=${selectedMonth}`)}
-          className="bg-card border border-border rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
+          className="bg-card border border-border rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer touch-feedback"
         >
           <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
             <TrendingDown className="w-3.5 h-3.5" />
             <span className="text-xs">Spent</span>
           </div>
-          <p className="text-2xl font-semibold tabular-nums">
+          <p className="text-fluid-2xl font-semibold tabular-nums">
             <AnimatedNumber value={summary.expenses} />
           </p>
         </motion.div>
@@ -159,13 +159,13 @@ function BentoMobileDashboard({
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
           onClick={() => router.push(`/transactions?month=${selectedMonth}`)}
-          className="bg-card border border-border rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
+          className="bg-card border border-border rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer touch-feedback"
         >
           <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
             <TrendingUp className="w-3.5 h-3.5" />
             <span className="text-xs">Income</span>
           </div>
-          <p className="text-2xl font-semibold tabular-nums text-success">
+          <p className="text-fluid-2xl font-semibold tabular-nums text-success">
             +<AnimatedNumber value={summary.income} />
           </p>
         </motion.div>
@@ -174,13 +174,13 @@ function BentoMobileDashboard({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.15 }}
-          className="bg-card border border-border rounded-xl p-4"
+          className="bg-card border border-border rounded-xl p-4 touch-feedback"
         >
           <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
             <PiggyBank className="w-3.5 h-3.5" />
             <span className="text-xs">Saved</span>
           </div>
-          <p className={`text-2xl font-semibold tabular-nums ${summary.savings >= 0 ? "text-success" : "text-error"}`}>
+          <p className={`text-fluid-2xl font-semibold tabular-nums ${summary.savings >= 0 ? "text-success" : "text-error"}`}>
             {summary.savings >= 0 ? "+" : ""}<AnimatedNumber value={summary.savings} />
           </p>
         </motion.div>
@@ -190,7 +190,7 @@ function BentoMobileDashboard({
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
           onClick={() => router.push("/budgets")}
-          className="bg-card border border-border rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
+          className="bg-card border border-border rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer touch-feedback"
         >
           <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
             <Target className="w-3.5 h-3.5" />
@@ -658,19 +658,6 @@ export function Dashboard({ onUploadClick }: DashboardProps) {
           </Card>
         )}
 
-        {transactionCountData === 0 && (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">
-                No transactions yet. Upload a bank statement to get started.
-              </p>
-              <Button variant="secondary" onClick={onUploadClick}>
-                <Plus className="w-4 h-4" />
-                Upload Statement
-              </Button>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );

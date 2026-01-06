@@ -317,7 +317,7 @@ export default function BudgetsPage() {
                             <div className="flex items-center gap-1 sm:gap-2">
                               <span className="text-xs sm:text-sm tabular-nums">{formatCurrency(item.spent)} / {formatCurrency(item.monthlyLimit!)}</span>
                               <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(item.categoryId, item.monthlyLimit)}><Pencil className="w-4 h-4" /></Button>
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-error hidden sm:flex" onClick={() => handleDelete(item.categoryId, item.categoryName)}><X className="w-4 h-4" /></Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-error active:text-error" onClick={() => handleDelete(item.categoryId, item.categoryName)}><X className="w-4 h-4" /></Button>
                             </div>
                           )}
                         </div>

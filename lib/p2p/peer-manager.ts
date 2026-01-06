@@ -1,4 +1,4 @@
-import Peer, { DataConnection } from "peerjs";
+import Peer, { DataConnection, PeerOptions } from "peerjs";
 import { generateRoomCode, roomCodeToPeerId, invalidateRoom } from "./room-code";
 import {
   SyncMessage,
@@ -9,6 +9,22 @@ import {
   createAckMessage,
 } from "./sync-protocol";
 import { localDB, getDeviceId } from "@/lib/db/local-db";
+
+// ICE servers for NAT traversal (needed for cross-network connections)
+const ICE_SERVERS: RTCIceServer[] = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:19302" },
+  { urls: "stun:stun3.l.google.com:19302" },
+  { urls: "stun:stun4.l.google.com:19302" },
+];
+
+const PEER_OPTIONS: PeerOptions = {
+  config: {
+    iceServers: ICE_SERVERS,
+  },
+  debug: process.env.NODE_ENV === "development" ? 2 : 0,
+};
 
 export type ConnectionState =
   | "disconnected"
@@ -71,7 +87,7 @@ export class P2PPeerManager {
       this.setState("connecting");
 
       const peerId = roomCodeToPeerId(this.roomCode!, "host");
-      this.peer = new Peer(peerId);
+      this.peer = new Peer(peerId, PEER_OPTIONS);
 
       this.peer.on("open", () => {
         this.setState("waiting");
@@ -108,7 +124,7 @@ export class P2PPeerManager {
 
       // Client creates peer with unique ID
       const clientPeerId = roomCodeToPeerId(roomCode, "client") + "-" + Date.now();
-      this.peer = new Peer(clientPeerId);
+      this.peer = new Peer(clientPeerId, PEER_OPTIONS);
 
       this.peer.on("open", () => {
         // Connect to host

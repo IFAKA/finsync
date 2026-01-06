@@ -53,7 +53,6 @@ export interface MotionButtonProps
 
 /**
  * MotionButton - Button with micro-interactions and sound feedback
- * Provides professional, tactile feedback for financial actions
  */
 const MotionButton = React.forwardRef<HTMLButtonElement, MotionButtonProps>(
   (
@@ -76,7 +75,6 @@ const MotionButton = React.forwardRef<HTMLButtonElement, MotionButtonProps>(
       onClick?.(e);
     };
 
-    // For asChild, we can't use motion directly
     if (asChild) {
       return (
         <Slot
@@ -114,28 +112,4 @@ const MotionButton = React.forwardRef<HTMLButtonElement, MotionButtonProps>(
 );
 MotionButton.displayName = "MotionButton";
 
-interface IconButtonProps extends MotionButtonProps {
-  label: string;
-}
-
-/**
- * IconButton - Animated icon button with accessibility label
- */
-const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ label, className, sound = "click", ...props }, ref) => {
-    return (
-      <MotionButton
-        ref={ref}
-        size="icon"
-        variant="ghost"
-        sound={sound}
-        aria-label={label}
-        className={className}
-        {...props}
-      />
-    );
-  }
-);
-IconButton.displayName = "IconButton";
-
-export { MotionButton, IconButton, buttonVariants };
+export { MotionButton, buttonVariants };

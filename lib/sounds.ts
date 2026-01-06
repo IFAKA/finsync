@@ -21,7 +21,8 @@ type SoundType =
   | 'close'           // Modal/dialog close
   | 'hover'           // Subtle hover feedback
   | 'notification'    // Toast/alert appearance
-  | 'complete';       // Task completion
+  | 'complete'        // Task completion
+  | 'delete';         // Destructive actions (trash, reset)
 
 interface SoundConfig {
   frequency: number;
@@ -144,6 +145,13 @@ const SOUNDS: Record<SoundType, SoundConfig | SoundConfig[]> = {
     { frequency: 523, duration: 0.08, type: 'sine', volume: 0.1, attack: 0.005, decay: 0.07 },
     { frequency: 784, duration: 0.15, type: 'sine', volume: 0.12, attack: 0.005, decay: 0.12, delay: 0.07 },
   ],
+
+  // Descending sweep - deletion/reset (serious but not alarming)
+  delete: [
+    { frequency: 440, duration: 0.1, type: 'sine', volume: 0.1, attack: 0.005, decay: 0.09 },
+    { frequency: 330, duration: 0.12, type: 'sine', volume: 0.08, attack: 0.005, decay: 0.1, delay: 0.08 },
+    { frequency: 220, duration: 0.18, type: 'sine', volume: 0.06, attack: 0.005, decay: 0.15, delay: 0.18 },
+  ],
 };
 
 class SoundSystem {
@@ -241,15 +249,4 @@ export const soundSystem = new SoundSystem();
 // Convenience function
 export function playSound(sound: SoundType): void {
   soundSystem.play(sound);
-}
-
-// Hook for React components
-export function useSounds() {
-  return {
-    play: (sound: SoundType) => soundSystem.play(sound),
-    setEnabled: (enabled: boolean) => soundSystem.setEnabled(enabled),
-    setVolume: (volume: number) => soundSystem.setVolume(volume),
-    isEnabled: () => soundSystem.isEnabled(),
-    getVolume: () => soundSystem.getVolume(),
-  };
 }

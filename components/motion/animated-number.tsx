@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useSpring, useTransform, useInView } from "framer-motion";
-import { numberCounterConfig } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 interface AnimatedNumberProps {
@@ -29,8 +28,8 @@ export function AnimatedNumber({
   format = "currency",
   currency = "EUR",
   locale = "es-ES",
-  duration = numberCounterConfig.duration,
-  delay = numberCounterConfig.delay,
+  duration = 0.8,
+  delay = 0.1,
   prefix = "",
   suffix = "",
   decimals = 2,
@@ -95,60 +94,6 @@ export function AnimatedNumber({
       className={cn("tabular-nums", className)}
     >
       {display}
-    </motion.span>
-  );
-}
-
-interface AnimatedDifferenceProps {
-  value: number;
-  previousValue: number;
-  className?: string;
-  currency?: string;
-  locale?: string;
-  showSign?: boolean;
-}
-
-/**
- * AnimatedDifference - Shows animated difference with color coding
- * Green for positive (income), Red for negative (expense)
- */
-export function AnimatedDifference({
-  value,
-  previousValue,
-  className,
-  currency = "EUR",
-  locale = "es-ES",
-  showSign = true,
-}: AnimatedDifferenceProps) {
-  const difference = value - previousValue;
-  const isPositive = difference >= 0;
-
-  return (
-    <motion.span
-      initial={{ opacity: 0, y: 5 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        "tabular-nums inline-flex items-center gap-1",
-        isPositive ? "text-success" : "text-error",
-        className
-      )}
-    >
-      {showSign && (
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 400 }}
-        >
-          {isPositive ? "+" : ""}
-        </motion.span>
-      )}
-      <AnimatedNumber
-        value={difference}
-        format="currency"
-        currency={currency}
-        locale={locale}
-        delay={0.1}
-      />
     </motion.span>
   );
 }

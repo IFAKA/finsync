@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { playSound } from "@/lib/sounds";
+import { useIsLandscape } from "@/lib/hooks/use-media-query";
+import { useSwipeNavigation } from "@/lib/hooks/use-swipe";
 import {
   LayoutDashboardIcon,
   ArrowLeftRightIcon,
@@ -19,11 +21,35 @@ const navItems = [
   { href: "/rules", label: "Rules", Icon: WandIcon },
 ];
 
+const navPaths = navItems.map((item) => item.href);
+
 export function MobileNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const isLandscape = useIsLandscape();
+
+  // Swipe navigation between pages
+  const { handlers: swipeHandlers } = useSwipeNavigation(
+    navPaths,
+    pathname,
+    (newPath) => {
+      playSound("click");
+      router.push(newPath);
+    }
+  );
+
+  // Hide nav in landscape mode on small screens to maximize vertical space
+  const isMobileLandscape = isLandscape && typeof window !== "undefined" && window.innerHeight < 500;
+
+  if (isMobileLandscape) {
+    return null;
+  }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 sm:hidden">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 sm:hidden"
+      {...swipeHandlers}
+    >
       {/* Gradient fade effect above nav */}
       <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-background to-transparent pointer-events-none" />
 
@@ -39,7 +65,7 @@ export function MobileNav() {
                 href={item.href}
                 onClick={() => playSound("click")}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl min-w-[64px] transition-colors relative",
+                  "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl min-w-[64px] transition-colors relative touch-feedback",
                   isActive
                     ? "text-foreground"
                     : "text-muted-foreground active:text-foreground"

@@ -318,3 +318,171 @@ button:active:not(:disabled),
   background: var(--accent);
   color: var(--accent-foreground);
 }
+
+/* ===== RESPONSIVE TYPOGRAPHY ===== */
+
+/* Fluid typography scaling using clamp() */
+.text-fluid-xs {
+  font-size: clamp(0.625rem, 0.55rem + 0.25vw, 0.75rem);
+}
+
+.text-fluid-sm {
+  font-size: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+}
+
+.text-fluid-base {
+  font-size: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+}
+
+.text-fluid-lg {
+  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.125rem);
+}
+
+.text-fluid-xl {
+  font-size: clamp(1.125rem, 1rem + 0.625vw, 1.25rem);
+}
+
+.text-fluid-2xl {
+  font-size: clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+}
+
+.text-fluid-3xl {
+  font-size: clamp(1.5rem, 1.25rem + 1.25vw, 1.875rem);
+}
+
+/* ===== TABLET-SPECIFIC STYLES (641px - 1024px) ===== */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Better spacing for tablet */
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  /* Tablet-optimized grid layouts */
+  .tablet-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .tablet-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* ===== LANDSCAPE MODE ADJUSTMENTS ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Reduce vertical spacing in landscape on small screens */
+  .landscape-compact {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  /* Side-by-side layout for landscape mobile */
+  .landscape-horizontal {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  /* Hide bottom nav in landscape mobile to maximize space */
+  .landscape-hide-nav {
+    display: none;
+  }
+}
+
+/* Tablet landscape - show full navigation */
+@media (orientation: landscape) and (min-width: 641px) {
+  .tablet-landscape-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* ===== SAFE AREA HANDLING ===== */
+
+/* Safe area padding utilities */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-left {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+.safe-area-right {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.safe-area-x {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.safe-area-y {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-all {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+/* Dialog/Modal safe area support */
+.dialog-safe-area {
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 2rem);
+}
+
+/* Drawer safe area support */
+.drawer-safe-area {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+}
+
+/* ===== TOUCH INTERACTION IMPROVEMENTS ===== */
+
+/* Swipe indicator for swipeable elements */
+.swipe-hint::after {
+  content: '';
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2rem;
+  height: 0.25rem;
+  background: var(--muted);
+  border-radius: 9999px;
+  opacity: 0.5;
+}
+
+/* Active touch feedback */
+@media (hover: none) and (pointer: coarse) {
+  .touch-feedback:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+    transition: transform 0.1s ease, opacity 0.1s ease;
+  }
+}
+
+/* Pull-to-refresh indicator placeholder */
+.pull-indicator {
+  height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: height 0.2s ease;
+}
+
+.pull-indicator.active {
+  height: 3rem;
+}

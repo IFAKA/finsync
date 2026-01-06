@@ -1,85 +1,15 @@
 /**
  * Motion Design System
  *
- * Export all motion components and hooks for the personal finance app.
- * These provide professional, subtle animations tailored for financial data.
+ * Export motion components for the personal finance app.
  */
 
-// Cards and containers
-export {
-  AnimatedCard,
-  AnimatedCardGrid,
-  StaggerItem,
-} from "./animated-card";
-
-// Numbers and values
-export {
-  AnimatedNumber,
-  AnimatedDifference,
-} from "./animated-number";
-
-// Lists and tables
-export {
-  AnimatedList,
-  AnimatedListItem,
-  AnimatedTableRow,
-} from "./animated-list";
-
-// Page and section transitions
-export {
-  PageTransition,
-  SectionTransition,
-  FadeIn,
-  ScaleIn,
-} from "./page-transition";
-
-// Progress indicators
-export {
-  AnimatedProgress,
-  BudgetProgress,
-} from "./animated-progress";
-
-// Buttons
-export {
-  MotionButton,
-  IconButton,
-  buttonVariants as motionButtonVariants,
-} from "./motion-button";
-
-// Icons
-export {
-  AnimatedCheck,
-  AnimatedX,
-  LoadingSpinner,
-  AnimatedDot,
-  AnimatedArrow,
-  MoneyIcon,
-} from "./animated-icons";
-
-// Microinteractions
-export {
-  AnimatedCheckbox,
-  AnimatedToggle,
-  useRipple,
-  PressableCard,
-  ExpandingInput,
-  PulseOnChange,
-  ShakeOnError,
-  SuccessCheck,
-  DeleteConfirm,
-  CountBadge,
-  HoverGlow,
-} from "./microinteractions";
-
-// Hooks
-export {
-  useInteraction,
-  useToggle,
-  useModalSound,
-  useActionSound,
-  useTransactionSound,
-} from "./use-interaction";
+export { StaggerItem } from "./animated-card";
+export { AnimatedNumber } from "./animated-number";
+export { FadeIn } from "./page-transition";
+export { AnimatedProgress } from "./animated-progress";
+export { MotionButton, buttonVariants as motionButtonVariants } from "./motion-button";
 
 // Re-export motion configuration
-export * from "@/lib/motion";
-export { playSound, useSounds, soundSystem } from "@/lib/sounds";
+export { easing, transitions } from "@/lib/motion";
+export { playSound } from "@/lib/sounds";

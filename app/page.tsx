@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UploadDropzone } from "@/components/upload-dropzone";
+import { UploadDropzone, type UploadResult } from "@/components/upload-dropzone";
 import { TransactionPreview } from "@/components/transaction-preview";
 import { Dashboard } from "@/components/dashboard";
 import {
@@ -11,17 +11,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-
-interface UploadResult {
-  filename: string;
-  bankName: string | null;
-  transactions: Array<{
-    date: string;
-    description: string;
-    amount: number;
-    balance?: number;
-  }>;
-}
 
 export default function Home() {
   const [uploadOpen, setUploadOpen] = useState(false);
