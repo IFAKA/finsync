@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useState, useRef, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { OnboardingProvider, useOnboarding } from "@/lib/contexts/onboarding-context";
 import { NavHeader } from "@/components/nav-header";
 import { MobileHeader } from "@/components/mobile-header";
@@ -24,8 +25,12 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useIsMobile, useIsLandscape } from "@/lib/hooks/use-media-query";
 
+// Routes that should bypass onboarding (e.g., P2P sync link from QR code)
+const ONBOARDING_BYPASS_ROUTES = ["/sync"];
+
 function AppContent({ children }: { children: ReactNode }) {
   const { isOnboardingComplete, isLoading, completeOnboarding } = useOnboarding();
+  const pathname = usePathname();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
@@ -33,6 +38,11 @@ function AppContent({ children }: { children: ReactNode }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   const isLandscape = useIsLandscape();
+
+  // Check if current route should bypass onboarding (e.g., /sync page for QR code links)
+  const shouldBypassOnboarding = ONBOARDING_BYPASS_ROUTES.some((route) =>
+    pathname?.startsWith(route)
+  );
 
   // Use drawer on mobile portrait, dialog on tablet/desktop or landscape
   const useDrawerUI = isMobile && !isLandscape;
@@ -134,6 +144,12 @@ function AppContent({ children }: { children: ReactNode }) {
   // Show nothing while loading to prevent flash
   if (isLoading) {
     return null;
+  }
+
+  // Bypass onboarding for certain routes (e.g., /sync page from QR code)
+  // These routes handle their own completion of onboarding after success
+  if (shouldBypassOnboarding) {
+    return <>{children}</>;
   }
 
   // Show onboarding if not complete

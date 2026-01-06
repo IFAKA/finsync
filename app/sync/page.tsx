@@ -7,6 +7,7 @@ import { RefreshCw, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useP2PSync } from "@/lib/hooks/use-p2p-sync";
+import { useOnboarding } from "@/lib/contexts/onboarding-context";
 import {
   isValidRoomCode,
   normalizeRoomCode,
@@ -19,6 +20,7 @@ function SyncPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const roomParam = searchParams.get("room");
+  const { completeOnboarding } = useOnboarding();
 
   const [status, setStatus] = useState<SyncStatus>("validating");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -74,6 +76,9 @@ function SyncPageContent() {
       hasCompletedSync.current = true;
       setStatus("success");
 
+      // Mark onboarding as complete (important for new devices syncing via QR code)
+      completeOnboarding();
+
       // Auto-close after 2 seconds
       const timer = setTimeout(() => {
         disconnect();
@@ -82,7 +87,7 @@ function SyncPageContent() {
 
       return () => clearTimeout(timer);
     }
-  }, [isConnected, isSyncing, status, disconnect, router]);
+  }, [isConnected, isSyncing, status, disconnect, router, completeOnboarding]);
 
   const emojis = roomParam ? getVerificationEmojis(normalizeRoomCode(roomParam)) : [];
 
