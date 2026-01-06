@@ -225,7 +225,7 @@ export function BentoMobileDashboard({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
-          onClick={() => router.push(attentionCount > 0 ? "/transactions?attention=true" : "/transactions")}
+          onClick={() => router.push(attentionCount > 0 ? `/transactions?attention=true${selectedMonth ? `&month=${selectedMonth}` : ''}` : "/transactions")}
           className={`border rounded-xl p-3 active:scale-[0.98] transition-transform cursor-pointer ${
             attentionCount > 0
               ? "bg-warning/10 border-warning/30"

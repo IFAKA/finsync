@@ -226,6 +226,7 @@ export function DesktopDashboard({
           transactions={transactions}
           categories={categories}
           attentionCount={attentionCount}
+          selectedMonth={selectedMonth}
           onCategoryChange={onCategoryChange}
         />
       )}
@@ -237,11 +238,13 @@ function NeedsAttentionSection({
   transactions,
   categories,
   attentionCount,
+  selectedMonth,
   onCategoryChange,
 }: {
   transactions: LocalTransaction[];
   categories: LocalCategory[];
   attentionCount: number;
+  selectedMonth: string | null;
   onCategoryChange: (transactionId: string, categoryId: string) => void;
 }) {
   return (
@@ -256,7 +259,7 @@ function NeedsAttentionSection({
             </span>
           </CardTitle>
           <Link
-            href="/transactions?attention=true"
+            href={`/transactions?attention=true${selectedMonth ? `&month=${selectedMonth}` : ''}`}
             className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
             View all
