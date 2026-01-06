@@ -65,9 +65,9 @@ export function useTransactionFilters({
   const filteredTransactions = useMemo(() => {
     let result = [...allTransactions];
 
-    // Needs attention filter
+    // Needs attention filter - uncategorized transactions
     if (needsAttention) {
-      result = result.filter((t) => !t.categoryId || t.needsReview);
+      result = result.filter((t) => !t.categoryId);
     }
 
     // Search filter

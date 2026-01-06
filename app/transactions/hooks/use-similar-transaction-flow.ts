@@ -28,7 +28,7 @@ export function useSimilarTransactionFlow() {
   const handleCategoryChange = useCallback(
     async (transaction: LocalTransaction, newCategoryId: string) => {
       try {
-        await updateTransaction(transaction.id, { categoryId: newCategoryId, needsReview: false });
+        await updateTransaction(transaction.id, { categoryId: newCategoryId });
         playSound("complete");
 
         // Clear any existing pill timeout
@@ -82,7 +82,7 @@ export function useSimilarTransactionFlow() {
           : matchingTransactionIds;
 
         // Bulk update transactions
-        const previousStates = await bulkUpdate(allIds, { categoryId: criteria.categoryId, needsReview: false });
+        const previousStates = await bulkUpdate(allIds, { categoryId: criteria.categoryId });
 
         // Create the rule
         const rule = await createRule({

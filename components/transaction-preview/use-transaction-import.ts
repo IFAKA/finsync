@@ -131,7 +131,7 @@ export function useTransactionImport({
           amount: t.amount,
           balance: t.balance,
           isRecurring: false,
-          needsReview: true,
+          needsReview: false,
           importBatchId: batchId,
           sourceFile: filename,
           bankName: bankName || undefined,
@@ -166,7 +166,6 @@ export function useTransactionImport({
           if (tx) {
             tx.categoryId = match.categoryId;
             tx.categoryConfidence = 1.0;
-            tx.needsReview = false;
             matchedIndices.add(match.index - 1);
           }
         }
@@ -205,7 +204,6 @@ export function useTransactionImport({
                 if (tx) {
                   tx.categoryId = match.categoryId;
                   tx.categoryConfidence = 1.0;
-                  tx.needsReview = false;
                   matchedIndices.add(originalIndex);
                 }
               }
@@ -254,11 +252,11 @@ export function useTransactionImport({
                 const tx = transactionsToSave[originalIndex];
                 if (tx) {
                   const categoryId = categoryMap.get(result.category);
-                  if (categoryId) {
+                  // Only assign category if confidence is high enough
+                  if (categoryId && result.confidence >= 0.7) {
                     tx.categoryId = categoryId;
                     tx.categoryConfidence = result.confidence;
                     tx.merchant = result.merchant;
-                    tx.needsReview = result.confidence < 0.7;
                   }
                 }
               }

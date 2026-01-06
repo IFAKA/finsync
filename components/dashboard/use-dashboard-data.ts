@@ -59,8 +59,8 @@ export function useDashboardData() {
     });
   }, [categories, budgets, summary.byCategory]);
 
-  // Count items needing attention
-  const attentionCount = transactions.filter((t) => !t.categoryId || t.needsReview).length;
+  // Count items needing attention - uncategorized transactions
+  const attentionCount = transactions.filter((t) => !t.categoryId).length;
 
   // Chart data for spending by category
   const chartData = useMemo(() => {

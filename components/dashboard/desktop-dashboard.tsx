@@ -270,7 +270,7 @@ function NeedsAttentionSection({
       <CardContent>
         <div className="space-y-1">
           {transactions
-            .filter((t) => !t.categoryId || t.needsReview)
+            .filter((t) => !t.categoryId)
             .slice(0, 5)
             .map((t) => {
               const catInfo = getCategoryInfo(categories, t.categoryId);

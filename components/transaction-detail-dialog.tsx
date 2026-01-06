@@ -120,10 +120,10 @@ export function TransactionDetailDialog({
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Status</span>
             <span>
-              {transaction.needsReview ? (
-                <span className="text-warning">Needs Review</span>
-              ) : (
+              {transaction.categoryId ? (
                 "Categorized"
+              ) : (
+                <span className="text-warning">Uncategorized</span>
               )}
             </span>
           </div>

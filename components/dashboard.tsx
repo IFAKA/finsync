@@ -35,7 +35,7 @@ export function Dashboard({ onUploadClick }: DashboardProps) {
 
   const handleCategoryChange = async (transactionId: string, categoryId: string) => {
     try {
-      await updateTransaction(transactionId, { categoryId, needsReview: false });
+      await updateTransaction(transactionId, { categoryId });
       toast.success("Category updated");
       playSound("complete");
     } catch {
