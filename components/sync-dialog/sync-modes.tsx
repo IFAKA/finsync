@@ -41,8 +41,8 @@ const SYNC_STEPS = [
 export function getStepFromMode(mode: DialogMode): number {
   if (mode === "choose") return 0; // No stepper on choose screen
   if (["create", "join", "connected"].includes(mode)) return 1; // Connect step
-  if (mode === "syncing") return 2;
-  if (mode === "success") return 3;
+  if (mode === "syncing") return 2; // Sync step
+  if (mode === "success") return 3; // Done step (all complete)
   return 0;
 }
 
@@ -119,23 +119,33 @@ export function SyncStepper({ currentStep }: SyncStepperProps) {
   // Don't render if on choose screen (step 0)
   if (currentStep === 0) return null;
 
+  const totalSteps = SYNC_STEPS.length; // 3
+  const isComplete = currentStep === totalSteps; // true when success (step 3)
+
   return (
     <div className="flex items-center px-2 pb-4 mb-2">
       {SYNC_STEPS.map((step, i) => {
         const stepNumber = i + 1;
+
+        // Determine status: when complete, all steps are "completed"
+        let status: "completed" | "current" | "pending";
+        if (isComplete) {
+          status = "completed"; // All steps green when done
+        } else if (currentStep > stepNumber) {
+          status = "completed";
+        } else if (currentStep === stepNumber) {
+          status = "current";
+        } else {
+          status = "pending";
+        }
+
         return (
           <Fragment key={step.label}>
-            {i > 0 && <StepConnector completed={currentStep > stepNumber} />}
+            {i > 0 && <StepConnector completed={isComplete || currentStep > stepNumber} />}
             <StepIndicator
               icon={step.icon}
               label={step.label}
-              status={
-                currentStep > stepNumber
-                  ? "completed"
-                  : currentStep === stepNumber
-                  ? "current"
-                  : "pending"
-              }
+              status={status}
             />
           </Fragment>
         );

@@ -53,14 +53,18 @@ export function useSyncDialogState({
 
   // Auto-transition to connected mode when first connected (before sync starts)
   useEffect(() => {
+    console.log(`[SyncDialog] Connection check: isConnected=${isConnected}, isSyncing=${isSyncing}, mode=${mode}`);
     if (isConnected && !isSyncing && mode !== "connected" && mode !== "syncing" && mode !== "success") {
+      console.log(`[SyncDialog] Auto-transitioning to 'connected' mode`);
       setMode("connected");
     }
   }, [isConnected, isSyncing, mode]);
 
   // Auto-transition to syncing mode when sync actually starts
   useEffect(() => {
+    console.log(`[SyncDialog] Syncing check: isSyncing=${isSyncing}, mode=${mode}`);
     if (isSyncing && (mode === "connected" || mode === "create" || mode === "join")) {
+      console.log(`[SyncDialog] Auto-transitioning to 'syncing' mode`);
       setMode("syncing");
       setHasStartedSync(true);
     }
@@ -68,7 +72,9 @@ export function useSyncDialogState({
 
   // Auto-transition to success and close when sync completes
   useEffect(() => {
+    console.log(`[SyncDialog] Success check: isConnected=${isConnected}, isSyncing=${isSyncing}, hasStartedSync=${hasStartedSync}, mode=${mode}, hasCompletedSync=${hasCompletedSync}`);
     if (isConnected && !isSyncing && hasStartedSync && mode === "syncing" && !hasCompletedSync) {
+      console.log(`[SyncDialog] Sync completed! Transitioning to 'success' mode`);
       setHasCompletedSync(true);
       setMode("success");
 
@@ -76,6 +82,7 @@ export function useSyncDialogState({
 
       // Auto-close after 2.5 seconds
       const timer = setTimeout(() => {
+        console.log(`[SyncDialog] Auto-closing dialog after success`);
         disconnect();
         onOpenChange(false);
         setMode(initialMode);

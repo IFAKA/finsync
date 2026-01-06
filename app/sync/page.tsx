@@ -30,27 +30,34 @@ function SyncPageContent() {
   const { joinRoom, disconnect, isConnected, isSyncing } = useP2PSync();
 
   useEffect(() => {
+    console.log(`[SyncPage] Initial effect, roomParam: ${roomParam}`);
     if (!roomParam) {
+      console.log(`[SyncPage] No room code provided`);
       setStatus("error");
       setErrorMessage("No room code provided");
       return;
     }
 
     const normalized = normalizeRoomCode(roomParam);
+    console.log(`[SyncPage] Normalized room code: ${normalized}`);
 
     if (!isValidRoomCode(normalized)) {
+      console.log(`[SyncPage] Invalid room code format`);
       setStatus("error");
       setErrorMessage("Invalid room code format");
       return;
     }
 
     // Auto-join the room
+    console.log(`[SyncPage] Joining room...`);
     setStatus("connecting");
     joinRoom(normalized)
       .then(() => {
+        console.log(`[SyncPage] joinRoom completed successfully`);
         // Will transition to syncing via useEffect
       })
       .catch((err) => {
+        console.error(`[SyncPage] joinRoom failed:`, err);
         setStatus("error");
         setErrorMessage(err.message || "Failed to connect");
       });
@@ -58,21 +65,27 @@ function SyncPageContent() {
 
   // Transition to syncing state when connected
   useEffect(() => {
+    console.log(`[SyncPage] Connected check: isConnected=${isConnected}, status=${status}`);
     if (isConnected && status !== "syncing" && status !== "success") {
+      console.log(`[SyncPage] Transitioning to syncing`);
       setStatus("syncing");
     }
   }, [isConnected, status]);
 
   // Track when sync actually starts
   useEffect(() => {
+    console.log(`[SyncPage] Sync start check: isSyncing=${isSyncing}, hasStartedSync=${hasStartedSync.current}`);
     if (isSyncing && !hasStartedSync.current) {
+      console.log(`[SyncPage] Sync has started`);
       hasStartedSync.current = true;
     }
   }, [isSyncing]);
 
   // Transition to success and auto-close when sync completes
   useEffect(() => {
+    console.log(`[SyncPage] Success check: isConnected=${isConnected}, isSyncing=${isSyncing}, hasStartedSync=${hasStartedSync.current}, status=${status}, hasCompletedSync=${hasCompletedSync.current}`);
     if (isConnected && !isSyncing && hasStartedSync.current && status === "syncing" && !hasCompletedSync.current) {
+      console.log(`[SyncPage] Sync complete! Transitioning to success`);
       hasCompletedSync.current = true;
       setStatus("success");
 
@@ -81,6 +94,7 @@ function SyncPageContent() {
 
       // Auto-close after 2 seconds
       const timer = setTimeout(() => {
+        console.log(`[SyncPage] Auto-closing, navigating to /`);
         disconnect();
         router.push("/");
       }, 2000);

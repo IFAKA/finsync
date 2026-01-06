@@ -60,6 +60,7 @@ export function useP2PSync(): UseP2PSyncReturn {
     if (!managerRef.current) {
       managerRef.current = getPeerManager({
         onStateChange: (newState) => {
+          console.log(`[useP2PSync] onStateChange: ${newState}`);
           setState(newState);
           // Clear progress when not syncing
           if (newState !== "syncing") {
@@ -67,23 +68,29 @@ export function useP2PSync(): UseP2PSyncReturn {
           }
         },
         onError: (err) => {
+          console.log(`[useP2PSync] onError: ${err}`);
           setError(err);
         },
         onSyncStart: () => {
+          console.log(`[useP2PSync] onSyncStart called`);
           setError(null);
           setSyncProgress({ current: 0, total: 0, phase: "receiving" });
         },
         onSyncProgress: (progress) => {
+          console.log(`[useP2PSync] onSyncProgress: ${progress.phase} ${progress.current}/${progress.total}`);
           setSyncProgress(progress);
         },
         onSyncComplete: () => {
+          console.log(`[useP2PSync] onSyncComplete called`);
           setLastSyncTime(new Date());
           setSyncProgress(null);
         },
         onPeerConnected: () => {
+          console.log(`[useP2PSync] onPeerConnected`);
           setError(null);
         },
         onPeerDisconnected: () => {
+          console.log(`[useP2PSync] onPeerDisconnected`);
           // Optionally clear room code on disconnect
         },
       });

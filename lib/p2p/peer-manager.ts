@@ -96,6 +96,7 @@ export class P2PPeerManager {
   }
 
   private setState(state: ConnectionState) {
+    console.log(`[P2P] State change: ${this.state} -> ${state} (isHost: ${this.isHost})`);
     this.state = state;
     this.callbacks.onStateChange?.(state);
   }
@@ -116,23 +117,28 @@ export class P2PPeerManager {
    * Create a new room as host
    */
   async createRoom(): Promise<string> {
+    console.log("[P2P] createRoom called");
     this.deviceId = await getDeviceId();
     this.roomCode = generateRoomCode();
     this.isHost = true;
     this.hasReceivedHello = false; // Reset for new room
+    console.log(`[P2P] Room created with code: ${this.roomCode}, deviceId: ${this.deviceId}`);
 
     return new Promise((resolve, reject) => {
       this.setState("connecting");
 
       const peerId = roomCodeToPeerId(this.roomCode!, "host");
+      console.log(`[P2P] Creating peer with ID: ${peerId}`);
       this.peer = new Peer(peerId, PEER_OPTIONS);
 
       this.peer.on("open", () => {
+        console.log("[P2P] Peer opened, waiting for connections...");
         this.setState("waiting");
         resolve(this.roomCode!);
       });
 
       this.peer.on("connection", (conn) => {
+        console.log("[P2P] Incoming connection received from:", conn.peer);
         this.handleIncomingConnection(conn);
       });
 
@@ -153,32 +159,38 @@ export class P2PPeerManager {
    * Join an existing room as client
    */
   async joinRoom(roomCode: string): Promise<void> {
+    console.log(`[P2P] joinRoom called with code: ${roomCode}`);
     this.deviceId = await getDeviceId();
     this.roomCode = roomCode;
     this.isHost = false;
     this.hasReceivedHello = false; // Reset for new connection
+    console.log(`[P2P] Joining room, deviceId: ${this.deviceId}`);
 
     return new Promise((resolve, reject) => {
       this.setState("connecting");
 
       // Client creates peer with unique ID
       const clientPeerId = roomCodeToPeerId(roomCode, "client") + "-" + Date.now();
+      console.log(`[P2P] Creating client peer with ID: ${clientPeerId}`);
       this.peer = new Peer(clientPeerId, PEER_OPTIONS);
 
       this.peer.on("open", () => {
         // Connect to host
         const hostPeerId = roomCodeToPeerId(roomCode, "host");
+        console.log(`[P2P] Client peer opened, connecting to host: ${hostPeerId}`);
         const conn = this.peer!.connect(hostPeerId, {
           reliable: true,
         });
 
         conn.on("open", () => {
+          console.log("[P2P] Connection to host opened");
           this.connection = conn;
           this.setupConnectionHandlers(conn);
           this.setState("connected");
           this.callbacks.onPeerConnected?.(conn.peer);
 
           // Start sync as client
+          console.log("[P2P] Starting sync as client...");
           this.initiateSync();
           resolve();
         });
@@ -199,13 +211,16 @@ export class P2PPeerManager {
   }
 
   private handleIncomingConnection(conn: DataConnection) {
+    console.log("[P2P] handleIncomingConnection, setting up connection handlers...");
     this.connection = conn;
     this.hasReceivedHello = false; // Reset for new connection
     this.setupConnectionHandlers(conn);
 
     conn.on("open", () => {
+      console.log("[P2P] Incoming connection opened");
       // Single-use: invalidate room code once connected
       if (this.roomCode) {
+        console.log("[P2P] Invalidating room code:", this.roomCode);
         invalidateRoom(this.roomCode);
       }
       this.setState("connected");
@@ -213,6 +228,7 @@ export class P2PPeerManager {
 
       // Host does NOT initiate sync - waits for client's HELLO
       // This prevents race conditions where both sides send HELLO simultaneously
+      console.log("[P2P] Host waiting for client HELLO to start sync...");
     });
   }
 
@@ -239,8 +255,11 @@ export class P2PPeerManager {
   }
 
   private async handleMessage(message: SyncMessage) {
+    console.log(`[P2P] Received message: ${message.type} (isHost: ${this.isHost})`, message.payload);
+
     switch (message.type) {
       case SyncMessageType.HELLO:
+        console.log(`[P2P] HELLO received, hasReceivedHello: ${this.hasReceivedHello}`);
         // Prevent duplicate HELLO handling (race condition protection)
         if (this.hasReceivedHello) {
           console.log("[P2P] Ignoring duplicate HELLO");
@@ -249,16 +268,19 @@ export class P2PPeerManager {
         this.hasReceivedHello = true;
 
         // Respond with our own hello
+        console.log("[P2P] Sending HELLO response...");
         await this.sendHello();
 
         // Only the peer that RECEIVED the first HELLO sends SYNC_REQUEST
         // This ensures only one side initiates the data exchange
         const syncState = await localDB.getSyncState();
         const since = syncState?.lastSyncTimestamp || new Date(0);
+        console.log(`[P2P] Sending SYNC_REQUEST with since: ${since.toISOString()}`);
         this.send(createSyncRequestMessage(since));
         break;
 
       case SyncMessageType.SYNC_REQUEST:
+        console.log(`[P2P] SYNC_REQUEST received, fetching changes since: ${message.payload.since}`);
         // Send our changes since requested timestamp
         const changes = await localDB.getChangedSince(new Date(message.payload.since));
 
@@ -268,6 +290,8 @@ export class P2PPeerManager {
           (changes.categories?.length || 0) +
           (changes.budgets?.length || 0) +
           (changes.rules?.length || 0);
+
+        console.log(`[P2P] Sending ${sendTotalItems} items (tx: ${changes.transactions?.length || 0}, cat: ${changes.categories?.length || 0}, budget: ${changes.budgets?.length || 0}, rules: ${changes.rules?.length || 0})`);
 
         // Report sending progress
         this.callbacks.onSyncProgress?.({
@@ -284,9 +308,11 @@ export class P2PPeerManager {
           total: sendTotalItems,
           phase: "sending",
         });
+        console.log("[P2P] SYNC_DATA sent, waiting for ACK...");
         break;
 
       case SyncMessageType.SYNC_DATA:
+        console.log("[P2P] SYNC_DATA received, starting merge...");
         // Merge incoming changes
         this.setState("syncing");
         this.callbacks.onSyncStart?.();
@@ -300,6 +326,8 @@ export class P2PPeerManager {
           (deserializedData.categories?.length || 0) +
           (deserializedData.budgets?.length || 0) +
           (deserializedData.rules?.length || 0);
+
+        console.log(`[P2P] Received ${totalItems} items to merge (tx: ${deserializedData.transactions?.length || 0}, cat: ${deserializedData.categories?.length || 0}, budget: ${deserializedData.budgets?.length || 0}, rules: ${deserializedData.rules?.length || 0})`);
 
         // Report receiving progress
         this.callbacks.onSyncProgress?.({
@@ -316,6 +344,7 @@ export class P2PPeerManager {
         });
 
         try {
+          console.log("[P2P] Merging changes into local DB...");
           await localDB.mergeChanges(deserializedData);
 
           // Report completion
@@ -331,8 +360,10 @@ export class P2PPeerManager {
           });
 
           // Acknowledge success
+          console.log("[P2P] Merge complete, sending ACK...");
           this.send(createAckMessage(totalItems));
           this.setState("connected");
+          console.log("[P2P] Calling onSyncComplete callback...");
           this.callbacks.onSyncComplete?.();
         } catch (error) {
           console.error("[P2P] Merge failed:", error);
@@ -343,11 +374,13 @@ export class P2PPeerManager {
         break;
 
       case SyncMessageType.ACK:
+        console.log(`[P2P] ACK received, itemCount: ${message.payload.itemCount}`);
         // Sync acknowledged by peer
         await localDB.updateSyncState({
           lastSyncTimestamp: new Date(),
         });
         this.setState("connected");
+        console.log("[P2P] Calling onSyncComplete callback (ACK received)...");
         this.callbacks.onSyncComplete?.();
         break;
 
@@ -366,7 +399,10 @@ export class P2PPeerManager {
 
   private send(message: SyncMessage) {
     if (this.connection && this.connection.open) {
+      console.log(`[P2P] Sending message: ${message.type}`, message.payload);
       this.connection.send(message);
+    } else {
+      console.warn(`[P2P] Cannot send message, connection not open:`, message.type);
     }
   }
 
@@ -374,12 +410,15 @@ export class P2PPeerManager {
    * Initiate sync (called by client after connecting)
    */
   async initiateSync() {
+    console.log("[P2P] initiateSync called, connection:", !!this.connection);
     if (!this.connection) return;
 
     this.setState("syncing");
     this.callbacks.onSyncStart?.();
+    console.log("[P2P] Sync started, calling onSyncStart callback...");
 
     // Send hello to start sync
+    console.log("[P2P] Sending initial HELLO to start sync...");
     await this.sendHello();
   }
 
