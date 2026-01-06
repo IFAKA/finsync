@@ -63,12 +63,36 @@ export async function getChangedSince(
 }> {
   const db = getLocalDB();
 
-  const [categories, transactions, budgets, rules] = await Promise.all([
+  const [changedCategories, transactions, budgets, rules] = await Promise.all([
     db.categories.filter((c) => c._lastModified > timestamp).toArray(),
     db.transactions.filter((t) => t._lastModified > timestamp).toArray(),
     db.budgets.filter((b) => b._lastModified > timestamp).toArray(),
     db.rules.filter((r) => r._lastModified > timestamp).toArray(),
   ]);
+
+  // Also include categories referenced by changed transactions
+  // This ensures the receiving device can properly remap category IDs
+  const referencedCategoryIds = new Set<string>();
+  for (const tx of transactions) {
+    if (tx.categoryId) {
+      referencedCategoryIds.add(tx.categoryId);
+    }
+  }
+
+  // Get any referenced categories that weren't already in the changed set
+  const changedCategoryIds = new Set(changedCategories.map((c) => c.id));
+  const missingCategoryIds = [...referencedCategoryIds].filter(
+    (id) => !changedCategoryIds.has(id)
+  );
+
+  let categories = changedCategories;
+  if (missingCategoryIds.length > 0) {
+    const referencedCategories = await db.categories
+      .where("id")
+      .anyOf(missingCategoryIds)
+      .toArray();
+    categories = [...changedCategories, ...referencedCategories];
+  }
 
   return { categories, transactions, budgets, rules };
 }
