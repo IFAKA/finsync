@@ -41,12 +41,14 @@ export function useBudgetMutations() {
 
   const update = useCallback(
     async (id: string, data: Partial<LocalBudget>) => {
+      await ensureDbInitialized();
       return updateBudget(id, data);
     },
     []
   );
 
   const remove = useCallback(async (id: string) => {
+    await ensureDbInitialized();
     return deleteBudget(id);
   }, []);
 

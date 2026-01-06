@@ -141,7 +141,9 @@ export async function getMonthlySummary(
       expenses += Math.abs(tx.amount);
     }
 
-    if (tx.categoryId) {
+    // Only count expenses (negative amounts) for category budgets
+    // Refunds (positive amounts) should not be counted as spending
+    if (tx.categoryId && tx.amount < 0) {
       const current = byCategory.get(tx.categoryId) || 0;
       byCategory.set(tx.categoryId, current + Math.abs(tx.amount));
     }
