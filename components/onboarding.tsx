@@ -118,7 +118,7 @@ export function Onboarding({ onUploadClick, onSyncClick }: OnboardingProps) {
   // Mobile: Full-screen, touch-optimized layout
   if (isMobile) {
     return (
-      <FadeIn className="min-h-screen flex flex-col bg-background">
+      <FadeIn className="min-h-dvh flex flex-col bg-background">
         {/* Progress bar at top */}
         <div className="px-6 pt-4 pb-2">
           <div className="flex gap-2">
