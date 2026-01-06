@@ -26,6 +26,7 @@ function SyncPageContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const hasStartedSync = useRef(false);
   const hasCompletedSync = useRef(false);
+  const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { joinRoom, disconnect, isConnected, isSyncing } = useP2PSync();
 
@@ -92,16 +93,24 @@ function SyncPageContent() {
       // Mark onboarding as complete (important for new devices syncing via QR code)
       completeOnboarding();
 
-      // Auto-close after 2 seconds
-      const timer = setTimeout(() => {
+      // Auto-redirect after 2 seconds (use ref to prevent cleanup from clearing it)
+      autoCloseTimerRef.current = setTimeout(() => {
         console.log(`[SyncPage] Auto-closing, navigating to /`);
         disconnect();
         router.push("/");
+        autoCloseTimerRef.current = null;
       }, 2000);
-
-      return () => clearTimeout(timer);
     }
   }, [isConnected, isSyncing, status, disconnect, router, completeOnboarding]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   const emojis = roomParam ? getVerificationEmojis(normalizeRoomCode(roomParam)) : [];
 

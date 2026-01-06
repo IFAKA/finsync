@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useP2PSync } from "@/lib/hooks/use-p2p-sync";
 import {
@@ -31,6 +31,7 @@ export function useSyncDialogState({
   const [expirySeconds, setExpirySeconds] = useState(0);
   const [hasStartedSync, setHasStartedSync] = useState(false);
   const [hasCompletedSync, setHasCompletedSync] = useState(false);
+  const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     state,
@@ -80,19 +81,27 @@ export function useSyncDialogState({
 
       onSyncComplete?.();
 
-      // Auto-close after 2.5 seconds
-      const timer = setTimeout(() => {
+      // Auto-close after 2.5 seconds (use ref to prevent cleanup from clearing it)
+      autoCloseTimerRef.current = setTimeout(() => {
         console.log(`[SyncDialog] Auto-closing dialog after success`);
         disconnect();
         onOpenChange(false);
         setMode(initialMode);
         setHasStartedSync(false);
         setHasCompletedSync(false);
+        autoCloseTimerRef.current = null;
       }, 2500);
-
-      return () => clearTimeout(timer);
     }
   }, [isConnected, isSyncing, hasStartedSync, mode, hasCompletedSync, disconnect, onOpenChange, onSyncComplete, initialMode]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   // Expiry countdown timer
   useEffect(() => {
@@ -158,6 +167,11 @@ export function useSyncDialogState({
 
   const handleOpenChange = useCallback((newOpen: boolean) => {
     if (!newOpen) {
+      // Clear auto-close timer if user manually closes
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
+        autoCloseTimerRef.current = null;
+      }
       setMode(initialMode);
       setInputCode("");
       setJoinError(null);
