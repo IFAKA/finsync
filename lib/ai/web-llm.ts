@@ -161,8 +161,10 @@ export async function generateCompletion(
 
   const response = await engine.chat.completions.create({
     messages,
-    temperature: 0.3,
+    temperature: 0, // Maximum determinism
+    top_p: 0.1, // Narrow token selection to reduce hallucinations
     max_tokens: 1024,
+    seed: 42, // Reproducible outputs
   });
 
   return response.choices[0]?.message?.content || "";
@@ -203,26 +205,48 @@ export async function categorizeTransactionsWithWebLLM(
   await initWebLLM(onProgress);
 
   // Build examples section if we have past categorizations
-  let examplesSection = "";
+  let userExamplesSection = "";
   if (categoryExamples && categoryExamples.length > 0) {
     const exampleLines = categoryExamples
       .filter((ce) => ce.examples.length > 0)
-      .map((ce) => `${ce.category}: ${ce.examples.slice(0, 3).join(", ")}`)
+      .map((ce) => `- ${ce.category}: ${ce.examples.slice(0, 3).join(", ")}`)
       .join("\n");
     if (exampleLines) {
-      examplesSection = `\nExamples:\n${exampleLines}\n`;
+      userExamplesSection = `\nPast categorizations:\n${exampleLines}\n`;
     }
   }
 
-  const systemPrompt = `You categorize bank transactions into categories. Output ONLY a JSON array.
+  // Optimized system prompt for small models (Llama 3.2 3B)
+  // Key principles: explicit patterns, deterministic rules, few-shot examples
+  const systemPrompt = `You categorize Spanish bank transactions. Output ONLY valid JSON array.
 
-Instructions:
-- Match by merchant/purpose, not amount
-- Extract clean merchant name from description
-- Confidence: 0.9=obvious match, 0.7=likely, 0.5=guess
-- Use exact category names provided
-${examplesSection}
-Respond with JSON array only, no explanation.`;
+CATEGORY RULES (use these patterns):
+Groceries: mercadona, carrefour, lidl, aldi, dia, eroski, supermercado
+Food & Dining: restaurante, bar, cafe, sibelius, kebab, pizza, burger
+Health: farmacia, clinica, hospital, medico, optica
+Subscriptions: netflix, spotify, hbo, disney, google one, claude.ai, amazon prime, masmovil, movistar, vodafone, xfera
+Shopping: amazon (not prime), aliexpress, xiaomi, mediamarkt, zara, hm
+Transfer: transferencia realizada, transferencia recibida, western union, bizum envio, r3mit, remesa
+Income: nomina, salario, abono transferencia +large amount
+Housing: alquiler, hipoteca, rent
+Utilities: luz, agua, gas, electricidad, endesa, iberdrola (not telecom)
+Transportation: uber, cabify, taxi, parking, gasolina, renfe
+Entertainment: cine, teatro, spotify (if not subscription)
+Other: comisiones, intereses, seguridad social, tgss, hacienda, bank fees
+
+OUTPUT FORMAT (exactly this):
+[{"index":1,"category":"Groceries","confidence":0.9,"merchant":"Mercadona"}]
+
+CONFIDENCE:
+- 0.9: Pattern clearly matches (mercadona→Groceries)
+- 0.7: Likely match but not certain
+- 0.5: Guessing, no clear pattern
+
+RULES:
+- Use EXACT category names from the list provided
+- Extract merchant name: "Mercadona el fontan oviedo" → "Mercadona"
+- If unsure, use "Other" with confidence 0.5
+- Output JSON array only, no text before or after`;
 
   const allResults: CategorizationResult[] = [];
   const totalBatches = Math.ceil(transactions.length / BATCH_SIZE);
@@ -246,12 +270,16 @@ Respond with JSON array only, no explanation.`;
       })
       .join("\n");
 
+    // Build the prompt with few-shot example for better model guidance
     const prompt = `Categories: ${categories.join(", ")}
-
+${userExamplesSection}
 Transactions:
 ${txList}
 
-Output format: [{"index":1,"category":"CategoryName","confidence":0.9,"merchant":"Name"}]`;
+Example output for "1. Mercadona el fontan (-45.50)" and "2. Claude.ai subscription (-18.00)":
+[{"index":1,"category":"Groceries","confidence":0.9,"merchant":"Mercadona"},{"index":2,"category":"Subscriptions","confidence":0.9,"merchant":"Claude.ai"}]
+
+Now categorize the transactions above. Output JSON array only:`;
 
     try {
       const response = await generateCompletion(prompt, systemPrompt);
@@ -308,12 +336,18 @@ function findBestCategory(input: string, categories: string[]): string | null {
 function sanitizeJson(jsonStr: string): string {
   let result = jsonStr;
 
-  // Replace single quotes with double quotes (but not inside strings)
+  // Replace single quotes with double quotes
   // This handles: {'key': 'value'} -> {"key": "value"}
   result = result.replace(/'/g, '"');
 
   // Fix unquoted property names: {index: 1} -> {"index": 1}
   result = result.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)/g, '$1"$2"$3');
+
+  // Fix missing colon after property name: "category" "Food" -> "category": "Food"
+  result = result.replace(/"([^"]+)"\s+"([^"]+)"/g, '"$1": "$2"');
+
+  // Fix missing colon before numbers: "index" 1 -> "index": 1
+  result = result.replace(/"([^"]+)"\s+(\d+\.?\d*)/g, '"$1": $2');
 
   // Remove trailing commas before ] or }
   result = result.replace(/,(\s*[}\]])/g, "$1");
@@ -321,26 +355,126 @@ function sanitizeJson(jsonStr: string): string {
   // Fix missing commas between objects: }{  -> },{
   result = result.replace(/}(\s*){/g, "},$1{");
 
+  // Fix missing commas between values: "value" "key" -> "value", "key"
+  result = result.replace(/("|\d)\s+"/g, '$1, "');
+
   return result;
+}
+
+// Extract individual JSON objects from potentially malformed array
+function extractJsonObjects(str: string): object[] {
+  const objects: object[] = [];
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escapeNext = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) continue;
+
+    if (char === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (char === "}") {
+      depth--;
+      if (depth === 0 && start !== -1) {
+        let objStr = str.slice(start, i + 1);
+        try {
+          objects.push(JSON.parse(objStr));
+        } catch {
+          try {
+            objStr = sanitizeJson(objStr);
+            objects.push(JSON.parse(objStr));
+          } catch {
+            // Skip malformed object
+          }
+        }
+        start = -1;
+      }
+    }
+  }
+
+  return objects;
 }
 
 function parseCategorizationResponse(
   response: string,
   categories: string[]
 ): CategorizationResult[] {
+  const processItems = (items: object[]): CategorizationResult[] => {
+    const results: CategorizationResult[] = [];
+    for (const item of items) {
+      const obj = item as Record<string, unknown>;
+      const rawCategory = String(obj.category || "");
+      const matchedCategory = findBestCategory(rawCategory, categories);
+
+      if (matchedCategory) {
+        results.push({
+          index: Number(obj.index),
+          category: matchedCategory,
+          confidence: Math.min(1, Math.max(0, Number(obj.confidence) || 0.5)),
+          merchant: obj.merchant ? String(obj.merchant).trim() : undefined,
+        });
+      } else if (rawCategory) {
+        console.warn(`[WebLLM Parse] Unknown category "${rawCategory}", skipping`);
+      }
+    }
+    return results;
+  };
+
   try {
-    // Find the JSON array by matching balanced brackets
+    // Find the JSON array start
     const startIdx = response.indexOf("[");
     if (startIdx === -1) {
       console.warn("[WebLLM Parse] No JSON array found in response");
       return [];
     }
 
+    // Find matching bracket, accounting for strings
     let depth = 0;
     let endIdx = -1;
+    let inString = false;
+    let escapeNext = false;
+
     for (let i = startIdx; i < response.length; i++) {
-      if (response[i] === "[") depth++;
-      else if (response[i] === "]") {
+      const char = response[i];
+
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
+
+      if (char === "\\") {
+        escapeNext = true;
+        continue;
+      }
+
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+
+      if (inString) continue;
+
+      if (char === "[") depth++;
+      else if (char === "]") {
         depth--;
         if (depth === 0) {
           endIdx = i;
@@ -349,42 +483,54 @@ function parseCategorizationResponse(
       }
     }
 
-    if (endIdx === -1) {
-      console.warn("[WebLLM Parse] Unbalanced brackets in response");
-      return [];
-    }
+    let jsonStr: string;
+    const needsRecovery = endIdx === -1;
 
-    let jsonStr = response.slice(startIdx, endIdx + 1);
+    if (needsRecovery) {
+      // Array not properly closed - try to salvage
+      jsonStr = response.slice(startIdx);
 
-    // Try parsing as-is first, then sanitized
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonStr);
-    } catch {
-      jsonStr = sanitizeJson(jsonStr);
-      parsed = JSON.parse(jsonStr);
-    }
-
-    if (Array.isArray(parsed)) {
-      const results: CategorizationResult[] = [];
-
-      for (const item of parsed) {
-        const rawCategory = String(item.category || "");
-        const matchedCategory = findBestCategory(rawCategory, categories);
-
-        if (matchedCategory) {
-          results.push({
-            index: Number(item.index),
-            category: matchedCategory,
-            confidence: Math.min(1, Math.max(0, Number(item.confidence) || 0.5)),
-            merchant: item.merchant ? String(item.merchant).trim() : undefined,
-          });
-        } else {
-          console.warn(`[WebLLM Parse] Unknown category "${rawCategory}", skipping`);
-        }
+      // Find the last complete object by finding the last valid "}"
+      const lastCompleteObject = jsonStr.lastIndexOf("}");
+      if (lastCompleteObject > 0) {
+        // Trim to last complete object and close the array
+        jsonStr = jsonStr.slice(0, lastCompleteObject + 1) + "]";
+      } else {
+        // No complete objects, just close it
+        jsonStr = jsonStr + "]";
       }
+    } else {
+      jsonStr = response.slice(startIdx, endIdx + 1);
+    }
 
-      return results;
+    // Try parsing as-is first
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed)) {
+        return processItems(parsed);
+      }
+    } catch {
+      // Try with sanitization
+      try {
+        const sanitized = sanitizeJson(jsonStr);
+        const parsed = JSON.parse(sanitized);
+        if (Array.isArray(parsed)) {
+          return processItems(parsed);
+        }
+      } catch {
+        // Silent - will try object extraction next
+      }
+    }
+
+    // Fallback: extract individual objects
+    const objects = extractJsonObjects(jsonStr);
+    if (objects.length > 0) {
+      return processItems(objects);
+    }
+
+    // Only warn if we couldn't recover anything
+    if (needsRecovery) {
+      console.warn("[WebLLM Parse] Could not recover any results from truncated response");
     }
   } catch (error) {
     console.error("[WebLLM Parse] Failed:", error);
