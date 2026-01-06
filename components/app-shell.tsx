@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useState, useRef, useCallback } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { OnboardingProvider, useOnboarding } from "@/lib/contexts/onboarding-context";
 import { NavHeader } from "@/components/nav-header";
 import { MobileHeader } from "@/components/mobile-header";
@@ -31,6 +31,7 @@ const ONBOARDING_BYPASS_ROUTES = ["/sync"];
 function AppContent({ children }: { children: ReactNode }) {
   const { isOnboardingComplete, isLoading, completeOnboarding } = useOnboarding();
   const pathname = usePathname();
+  const router = useRouter();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
@@ -139,6 +140,10 @@ function AppContent({ children }: { children: ReactNode }) {
 
   const handleSyncComplete = () => {
     completeOnboarding();
+    // Redirect to dashboard after the dialog auto-closes (2.5s + buffer)
+    setTimeout(() => {
+      router.push("/");
+    }, 3000);
   };
 
   // Show nothing while loading to prevent flash
