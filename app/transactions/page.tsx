@@ -48,7 +48,6 @@ function TransactionsLoading() {
 
 function TransactionsContent() {
   const searchParams = useSearchParams();
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<LocalTransaction | null>(null);
 
   // Fetch data
@@ -112,20 +111,15 @@ function TransactionsContent() {
   return (
     <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-3 sm:space-y-6">
       <MobileTransactionFilters
-        selectedMonth={filters.selectedMonth}
-        availableMonths={availableMonths}
-        canGoNewer={filters.canGoNewer}
-        canGoOlder={filters.canGoOlder}
-        showFilters={showFilters}
-        activeFilterCount={filters.activeFilterCount}
+        totalCount={filters.totalCount}
         search={filters.search}
         selectedCategory={filters.selectedCategory}
+        selectedMonth={filters.selectedMonth}
         sortBy={filters.sortBy}
         needsAttention={filters.needsAttention}
         categories={categories}
+        availableMonths={availableMonths}
         hasFilters={filters.hasFilters}
-        onNavigateMonth={filters.navigateMonth}
-        onToggleFilters={() => setShowFilters(!showFilters)}
         onSearchChange={filters.setSearch}
         onCategoryChange={filters.handleCategoryFilterChange}
         onMonthChange={filters.handleMonthFilterChange}
