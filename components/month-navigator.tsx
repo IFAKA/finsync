@@ -71,6 +71,7 @@ export function MonthNavigator({
         whileHover={!isMobile ? { scale: 1.1 } : undefined}
         onClick={() => navigateMonth(-1)}
         disabled={!canGoOlder}
+        aria-label="Previous month"
         className={`${buttonSize} flex items-center justify-center hover:bg-muted/50 rounded-lg transition-colors disabled:opacity-30`}
       >
         <ChevronLeft className="w-5 h-5" />
@@ -91,6 +92,7 @@ export function MonthNavigator({
         whileHover={!isMobile ? { scale: 1.1 } : undefined}
         onClick={() => navigateMonth(1)}
         disabled={!canGoNewer}
+        aria-label="Next month"
         className={`${buttonSize} flex items-center justify-center hover:bg-muted/50 rounded-lg transition-colors disabled:opacity-30`}
       >
         <ChevronRight className="w-5 h-5" />

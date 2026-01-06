@@ -130,10 +130,10 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
     >
       <div className="flex flex-col items-center justify-center text-center">
         {isLoading ? (
-          <>
-            <Loader2 className="w-10 h-10 text-muted-foreground mb-4 animate-spin" />
+          <div className="loading-delayed">
+            <Loader2 className="w-10 h-10 text-muted-foreground mb-4 animate-spin mx-auto" />
             <p className="text-sm text-muted-foreground">Processing file…</p>
-          </>
+          </div>
         ) : uploadedFile ? (
           <>
             <div className="flex items-center gap-3 mb-4">

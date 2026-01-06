@@ -172,7 +172,7 @@ function AppContent({ children }: { children: ReactNode }) {
                 <DrawerTitle>Import transactions</DrawerTitle>
               </VisuallyHidden.Root>
               {isProcessingFile ? (
-                <div className="flex flex-col items-center justify-center py-12 px-4">
+                <div className="flex flex-col items-center justify-center py-12 px-4 loading-delayed">
                   <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mb-4" />
                   <p className="text-sm text-muted-foreground">Processing file...</p>
                 </div>

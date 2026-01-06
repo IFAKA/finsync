@@ -113,6 +113,16 @@ button:active:not(:disabled),
   transform: scale(0.98);
 }
 
+/* Prevent double-tap zoom delay on interactive elements */
+button,
+[role="button"],
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
 /* Minimum hit target sizes - 44px on mobile, 24px desktop */
 @media (max-width: 640px) {
   button,
@@ -233,7 +243,7 @@ button:active:not(:disabled),
 
 /* Animation utility classes */
 .animate-slide-up {
-  animation: slideUp 350ms cubic-bezier(0.23, 1, 0.32, 1);
+  animation: slideUp 300ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .animate-scale-in {
@@ -261,6 +271,16 @@ button:active:not(:disabled),
 
 .animate-attention {
   animation: attention-pulse 2s ease-in-out infinite;
+}
+
+/* Delayed loading - prevents flash for fast operations (150-300ms guideline) */
+.loading-delayed {
+  animation: loading-fade-in 300ms ease-out 200ms both;
+}
+
+@keyframes loading-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Stagger delay utilities */

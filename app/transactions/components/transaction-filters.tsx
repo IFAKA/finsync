@@ -66,6 +66,7 @@ export function MobileTransactionFilters({
             whileTap={{ scale: 0.95 }}
             onClick={() => onNavigateMonth(-1)}
             disabled={!canGoOlder}
+            aria-label="Previous month"
             className="h-10 w-10 flex items-center justify-center hover:bg-muted/50 rounded-lg transition-colors disabled:opacity-30"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -87,6 +88,7 @@ export function MobileTransactionFilters({
             whileTap={{ scale: 0.95 }}
             onClick={() => onNavigateMonth(1)}
             disabled={!canGoNewer}
+            aria-label="Next month"
             className="h-10 w-10 flex items-center justify-center hover:bg-muted/50 rounded-lg transition-colors disabled:opacity-30"
           >
             <ChevronRight className="w-5 h-5" />
@@ -96,6 +98,8 @@ export function MobileTransactionFilters({
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={onToggleFilters}
+            aria-label={showFilters ? "Hide filters" : "Show filters"}
+            aria-expanded={showFilters}
             className={`h-10 w-10 flex items-center justify-center rounded-lg transition-colors ${
               showFilters || activeFilterCount > 0
                 ? "bg-foreground text-background"
@@ -262,7 +266,7 @@ export function DesktopTransactionFilters({
           </SelectContent>
         </Select>
         {hasFilters && (
-          <Button variant="ghost" size="icon" onClick={onClearFilters}>
+          <Button variant="ghost" size="icon" onClick={onClearFilters} aria-label="Clear filters">
             <X className="w-4 h-4" />
           </Button>
         )}
