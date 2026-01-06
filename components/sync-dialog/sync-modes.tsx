@@ -327,12 +327,74 @@ export function SyncJoinMode({
   );
 }
 
-// Syncing Mode
-interface SyncingModeProps {
+// Connected Mode (shown briefly before sync starts)
+interface ConnectedModeProps {
   roomCode: string | null;
 }
 
-export function SyncSyncingMode({ roomCode }: SyncingModeProps) {
+export function SyncConnectedMode({ roomCode }: ConnectedModeProps) {
+  return (
+    <motion.div
+      key="connected"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="py-8"
+    >
+      <VisuallyHidden.Root>
+        <DialogTitle>Connected</DialogTitle>
+      </VisuallyHidden.Root>
+      <div className="flex flex-col items-center justify-center space-y-6">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", bounce: 0.5 }}
+        >
+          <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center">
+            <Check className="w-10 h-10 text-white" />
+          </div>
+        </motion.div>
+
+        <div className="text-center space-y-2">
+          <p className="text-xl font-semibold">Connected!</p>
+          <p className="text-sm text-muted-foreground">
+            Starting sync...
+          </p>
+        </div>
+
+        {roomCode && (
+          <div className="flex items-center justify-center gap-2 p-3 bg-foreground rounded-lg">
+            <span className="text-sm text-background/70">Verified:</span>
+            <span className="text-2xl">
+              {getVerificationEmojis(roomCode).join(" ")}
+            </span>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// Syncing Mode
+interface SyncingModeProps {
+  roomCode: string | null;
+  progress?: { current: number; total: number; phase: string } | null;
+}
+
+export function SyncSyncingMode({ roomCode, progress }: SyncingModeProps) {
+  const percentage = progress && progress.total > 0
+    ? Math.round((progress.current / progress.total) * 100)
+    : 0;
+
+  const getPhaseLabel = (phase: string) => {
+    switch (phase) {
+      case "sending": return "Sending data...";
+      case "receiving": return "Receiving data...";
+      case "merging": return "Merging changes...";
+      default: return "Syncing...";
+    }
+  };
+
   return (
     <motion.div
       key="syncing"
@@ -353,11 +415,30 @@ export function SyncSyncingMode({ roomCode }: SyncingModeProps) {
         </motion.div>
 
         <div className="text-center space-y-2">
-          <p className="text-xl font-semibold">Syncing...</p>
+          <p className="text-xl font-semibold">
+            {progress ? getPhaseLabel(progress.phase) : "Syncing..."}
+          </p>
           <p className="text-sm text-muted-foreground">
             Transferring your data securely
           </p>
         </div>
+
+        {/* Progress bar */}
+        {progress && progress.total > 0 && (
+          <div className="w-full max-w-xs space-y-2">
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-primary rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${percentage}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+            <p className="text-xs text-center text-muted-foreground">
+              {progress.current} / {progress.total} items ({percentage}%)
+            </p>
+          </div>
+        )}
 
         {roomCode && (
           <div className="flex items-center justify-center gap-2 p-3 bg-foreground rounded-lg">

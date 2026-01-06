@@ -4,6 +4,7 @@ export {
   SyncChooseMode,
   SyncCreateMode,
   SyncJoinMode,
+  SyncConnectedMode,
   SyncSyncingMode,
   SyncSuccessMode,
 } from "./sync-modes";

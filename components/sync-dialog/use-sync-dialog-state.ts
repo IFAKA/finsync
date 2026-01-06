@@ -9,7 +9,7 @@ import {
   getRoomExpirySeconds,
 } from "@/lib/p2p/room-code";
 
-export type DialogMode = "choose" | "create" | "join" | "syncing" | "success";
+export type DialogMode = "choose" | "create" | "join" | "connected" | "syncing" | "success";
 
 interface UseSyncDialogStateOptions {
   open: boolean;
@@ -36,6 +36,7 @@ export function useSyncDialogState({
     state,
     roomCode,
     error,
+    syncProgress,
     createRoom,
     joinRoom,
     disconnect,
@@ -50,19 +51,20 @@ export function useSyncDialogState({
     }
   }, [open, initialMode]);
 
-  // Auto-transition to syncing mode when connected
+  // Auto-transition to connected mode when first connected (before sync starts)
   useEffect(() => {
-    if (isConnected && mode !== "syncing" && mode !== "success") {
-      setMode("syncing");
+    if (isConnected && !isSyncing && mode !== "connected" && mode !== "syncing" && mode !== "success") {
+      setMode("connected");
     }
-  }, [isConnected, mode]);
+  }, [isConnected, isSyncing, mode]);
 
-  // Track when sync actually starts
+  // Auto-transition to syncing mode when sync actually starts
   useEffect(() => {
-    if (isSyncing && !hasStartedSync) {
+    if (isSyncing && (mode === "connected" || mode === "create" || mode === "join")) {
+      setMode("syncing");
       setHasStartedSync(true);
     }
-  }, [isSyncing, hasStartedSync]);
+  }, [isSyncing, mode]);
 
   // Auto-transition to success and close when sync completes
   useEffect(() => {
@@ -72,14 +74,14 @@ export function useSyncDialogState({
 
       onSyncComplete?.();
 
-      // Auto-close after 2 seconds
+      // Auto-close after 2.5 seconds
       const timer = setTimeout(() => {
         disconnect();
         onOpenChange(false);
         setMode(initialMode);
         setHasStartedSync(false);
         setHasCompletedSync(false);
-      }, 2000);
+      }, 2500);
 
       return () => clearTimeout(timer);
     }
@@ -182,6 +184,7 @@ export function useSyncDialogState({
     roomCode,
     error,
     isConnected,
+    syncProgress,
     // Handlers
     handleCreateRoom,
     handleJoinRoom,

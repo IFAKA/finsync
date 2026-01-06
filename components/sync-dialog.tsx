@@ -9,6 +9,7 @@ import {
   SyncChooseMode,
   SyncCreateMode,
   SyncJoinMode,
+  SyncConnectedMode,
   SyncSyncingMode,
   SyncSuccessMode,
   type DialogMode,
@@ -37,6 +38,7 @@ export function SyncDialog({
     state,
     roomCode,
     error,
+    syncProgress,
     handleCreateRoom,
     handleJoinRoom,
     handleCopyCode,
@@ -109,7 +111,11 @@ export function SyncDialog({
             />
           )}
 
-          {mode === "syncing" && <SyncSyncingMode roomCode={roomCode} />}
+          {mode === "connected" && <SyncConnectedMode roomCode={roomCode} />}
+
+          {mode === "syncing" && (
+            <SyncSyncingMode roomCode={roomCode} progress={syncProgress} />
+          )}
 
           {mode === "success" && <SyncSuccessMode roomCode={roomCode} />}
         </AnimatePresence>

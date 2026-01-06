@@ -54,10 +54,17 @@ export type ConnectionState =
   | "syncing"
   | "error";
 
+export interface SyncProgress {
+  current: number;
+  total: number;
+  phase: "sending" | "receiving" | "merging";
+}
+
 export interface PeerManagerCallbacks {
   onStateChange?: (state: ConnectionState) => void;
   onError?: (error: string) => void;
   onSyncStart?: () => void;
+  onSyncProgress?: (progress: SyncProgress) => void;
   onSyncComplete?: () => void;
   onPeerConnected?: (peerId: string) => void;
   onPeerDisconnected?: () => void;
@@ -226,7 +233,29 @@ export class P2PPeerManager {
       case SyncMessageType.SYNC_REQUEST:
         // Send our changes since requested timestamp
         const changes = await localDB.getChangedSince(new Date(message.payload.since));
+
+        // Calculate total items to send
+        const sendTotalItems =
+          (changes.transactions?.length || 0) +
+          (changes.categories?.length || 0) +
+          (changes.budgets?.length || 0) +
+          (changes.rules?.length || 0);
+
+        // Report sending progress
+        this.callbacks.onSyncProgress?.({
+          current: 0,
+          total: sendTotalItems,
+          phase: "sending",
+        });
+
         this.send(createSyncDataMessage(changes));
+
+        // Report send complete
+        this.callbacks.onSyncProgress?.({
+          current: sendTotalItems,
+          total: sendTotalItems,
+          phase: "sending",
+        });
         break;
 
       case SyncMessageType.SYNC_DATA:
@@ -236,7 +265,37 @@ export class P2PPeerManager {
 
         // Deserialize dates (JSON transmission converts Date objects to strings)
         const deserializedData = deserializeSyncData(message.payload.data);
+
+        // Calculate total items to merge
+        const totalItems =
+          (deserializedData.transactions?.length || 0) +
+          (deserializedData.categories?.length || 0) +
+          (deserializedData.budgets?.length || 0) +
+          (deserializedData.rules?.length || 0);
+
+        // Report receiving progress
+        this.callbacks.onSyncProgress?.({
+          current: 0,
+          total: totalItems,
+          phase: "receiving",
+        });
+
+        // Report merging progress
+        this.callbacks.onSyncProgress?.({
+          current: 0,
+          total: totalItems,
+          phase: "merging",
+        });
+
         await localDB.mergeChanges(deserializedData);
+
+        // Report completion
+        this.callbacks.onSyncProgress?.({
+          current: totalItems,
+          total: totalItems,
+          phase: "merging",
+        });
+
         await localDB.updateSyncState({
           lastSyncTimestamp: new Date(),
         });

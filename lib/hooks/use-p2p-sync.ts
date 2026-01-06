@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   P2PPeerManager,
   ConnectionState,
+  SyncProgress,
   getPeerManager,
 } from "@/lib/p2p/peer-manager";
 import { initializeLocalDB, localDB } from "@/lib/db";
@@ -15,6 +16,7 @@ export interface UseP2PSyncReturn {
   isHost: boolean;
   error: string | null;
   lastSyncTime: Date | null;
+  syncProgress: SyncProgress | null;
 
   // Actions
   createRoom: () => Promise<string>;
@@ -33,6 +35,7 @@ export function useP2PSync(): UseP2PSyncReturn {
   const [isHost, setIsHost] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
 
   const managerRef = useRef<P2PPeerManager | null>(null);
   const initializedRef = useRef(false);
@@ -58,15 +61,24 @@ export function useP2PSync(): UseP2PSyncReturn {
       managerRef.current = getPeerManager({
         onStateChange: (newState) => {
           setState(newState);
+          // Clear progress when not syncing
+          if (newState !== "syncing") {
+            setSyncProgress(null);
+          }
         },
         onError: (err) => {
           setError(err);
         },
         onSyncStart: () => {
           setError(null);
+          setSyncProgress({ current: 0, total: 0, phase: "receiving" });
+        },
+        onSyncProgress: (progress) => {
+          setSyncProgress(progress);
         },
         onSyncComplete: () => {
           setLastSyncTime(new Date());
+          setSyncProgress(null);
         },
         onPeerConnected: () => {
           setError(null);
@@ -142,6 +154,7 @@ export function useP2PSync(): UseP2PSyncReturn {
     isHost,
     error,
     lastSyncTime,
+    syncProgress,
     createRoom,
     joinRoom,
     disconnect,
