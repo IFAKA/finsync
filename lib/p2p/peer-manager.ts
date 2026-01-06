@@ -374,7 +374,7 @@ export class P2PPeerManager {
         break;
 
       case SyncMessageType.ACK:
-        console.log(`[P2P] ACK received, itemCount: ${message.payload.itemCount}`);
+        console.log(`[P2P] ACK received, receivedCount: ${message.payload.receivedCount}`);
         // Sync acknowledged by peer
         await localDB.updateSyncState({
           lastSyncTimestamp: new Date(),
