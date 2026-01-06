@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  ResponsiveModal,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+  ResponsiveModalBody,
+} from "@/components/ui/responsive-modal";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface TransactionDetailDialogProps {
@@ -62,28 +62,26 @@ export function TransactionDetailDialog({
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Transaction Details</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          {details.map(
-            (item) =>
-              item.value !== null &&
-              item.value !== undefined && (
-                <div key={item.label} className="flex flex-col gap-0.5">
-                  <span className="text-xs text-muted-foreground">{item.label}</span>
-                  <span
-                    className={`text-sm ${item.highlight ? (transaction.amount >= 0 ? "text-success font-medium" : "font-medium") : ""}`}
-                  >
-                    {item.value}
-                  </span>
-                </div>
-              )
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+    <ResponsiveModal open={open} onOpenChange={onOpenChange} className="max-w-md">
+      <ResponsiveModalHeader>
+        <ResponsiveModalTitle>Transaction Details</ResponsiveModalTitle>
+      </ResponsiveModalHeader>
+      <ResponsiveModalBody className="space-y-3 p-4 sm:p-0">
+        {details.map(
+          (item) =>
+            item.value !== null &&
+            item.value !== undefined && (
+              <div key={item.label} className="flex flex-col gap-0.5">
+                <span className="text-xs text-muted-foreground">{item.label}</span>
+                <span
+                  className={`text-sm ${item.highlight ? (transaction.amount >= 0 ? "text-success font-medium" : "font-medium") : ""}`}
+                >
+                  {item.value}
+                </span>
+              </div>
+            )
+        )}
+      </ResponsiveModalBody>
+    </ResponsiveModal>
   );
 }

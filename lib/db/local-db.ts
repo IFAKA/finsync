@@ -497,6 +497,94 @@ export const localDB = {
     });
   },
 
+  // Find transactions matching rule criteria (excluding a specific transaction)
+  async findSimilarTransactions(
+    criteria: {
+      descriptionContains?: string;
+      amountMin?: number;
+      amountMax?: number;
+      amountEquals?: number;
+    },
+    excludeId?: string
+  ): Promise<LocalTransaction[]> {
+    const db = getLocalDB();
+
+    let collection = db.transactions.filter((t) => !t._deleted);
+
+    if (excludeId) {
+      collection = collection.filter((t) => t.id !== excludeId);
+    }
+
+    const all = await collection.toArray();
+
+    return all.filter((tx) => {
+      // Description match (case-insensitive)
+      if (criteria.descriptionContains) {
+        const searchTerm = criteria.descriptionContains.toLowerCase();
+        const matchesDesc =
+          tx.rawDescription.toLowerCase().includes(searchTerm) ||
+          tx.description.toLowerCase().includes(searchTerm);
+        if (!matchesDesc) return false;
+      }
+
+      // Amount equals (with small tolerance for floating point)
+      if (criteria.amountEquals !== undefined) {
+        if (Math.abs(tx.amount - criteria.amountEquals) > 0.01) return false;
+      }
+
+      // Amount range
+      if (criteria.amountMin !== undefined) {
+        if (tx.amount < criteria.amountMin) return false;
+      }
+      if (criteria.amountMax !== undefined) {
+        if (tx.amount > criteria.amountMax) return false;
+      }
+
+      return true;
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  },
+
+  // Bulk update transactions - returns previous states for undo
+  async bulkUpdateTransactions(
+    ids: string[],
+    data: Partial<LocalTransaction>
+  ): Promise<{ id: string; previousCategoryId?: string }[]> {
+    const db = getLocalDB();
+    const now = new Date();
+    const previousStates: { id: string; previousCategoryId?: string }[] = [];
+
+    // Get previous states for undo
+    for (const id of ids) {
+      const tx = await db.transactions.get(id);
+      if (tx) {
+        previousStates.push({ id, previousCategoryId: tx.categoryId });
+      }
+    }
+
+    // Update all transactions
+    await db.transactions
+      .where("id")
+      .anyOf(ids)
+      .modify({ ...data, _lastModified: now });
+
+    return previousStates;
+  },
+
+  // Revert bulk update (for undo)
+  async revertBulkUpdate(
+    previousStates: { id: string; previousCategoryId?: string }[]
+  ): Promise<void> {
+    const db = getLocalDB();
+    const now = new Date();
+
+    for (const state of previousStates) {
+      await db.transactions.update(state.id, {
+        categoryId: state.previousCategoryId,
+        _lastModified: now,
+      });
+    }
+  },
+
   // Sync helpers
   async getChangedSince(
     timestamp: Date

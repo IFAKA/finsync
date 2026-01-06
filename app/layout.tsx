@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt } from "@/components/install-prompt";
 import { OfflineIndicator } from "@/components/offline-indicator";
+import { UpdateBanner } from "@/components/update-banner";
 import { AppShell } from "@/components/app-shell";
 
 const geistSans = Geist({
@@ -52,6 +53,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <UpdateBanner />
         <AppShell>{children}</AppShell>
         <Toaster />
         <InstallPrompt />

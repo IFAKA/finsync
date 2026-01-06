@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronLeft, Upload, Tags, PiggyBank, Sparkles } from "lucide-react";
+import { ChevronRight, ChevronLeft, Upload, Tags, PiggyBank, Sparkles, RefreshCw } from "lucide-react";
 import {
   MotionButton,
   FadeIn,
@@ -14,6 +14,7 @@ import { useMediaQuery } from "@/lib/hooks/use-media-query";
 
 interface OnboardingProps {
   onUploadClick: () => void;
+  onSyncClick: () => void;
 }
 
 const STEPS = [
@@ -79,7 +80,7 @@ const iconVariants = {
   },
 };
 
-export function Onboarding({ onUploadClick }: OnboardingProps) {
+export function Onboarding({ onUploadClick, onSyncClick }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
   const isMobile = useMediaQuery("(max-width: 640px)");
@@ -103,6 +104,11 @@ export function Onboarding({ onUploadClick }: OnboardingProps) {
   const handleUpload = () => {
     playSound("click");
     onUploadClick();
+  };
+
+  const handleSync = () => {
+    playSound("click");
+    onSyncClick();
   };
 
   const step = STEPS[currentStep];
@@ -189,14 +195,25 @@ export function Onboarding({ onUploadClick }: OnboardingProps) {
         {/* Fixed bottom action area */}
         <div className="px-6 pb-8 pt-4 space-y-3 bg-gradient-to-t from-background via-background to-transparent">
           {isLastStep ? (
-            <MotionButton
-              onClick={handleUpload}
-              sound="click"
-              className="w-full h-14 text-base"
-            >
-              <Upload className="w-5 h-5" />
-              Upload Statement
-            </MotionButton>
+            <>
+              <MotionButton
+                onClick={handleUpload}
+                sound="click"
+                className="w-full h-14 text-base"
+              >
+                <Upload className="w-5 h-5" />
+                Upload Statement
+              </MotionButton>
+              <MotionButton
+                variant="secondary"
+                onClick={handleSync}
+                sound="click"
+                className="w-full h-12"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Sync from Another Device
+              </MotionButton>
+            </>
           ) : (
             <MotionButton
               onClick={handleNext}
@@ -208,7 +225,7 @@ export function Onboarding({ onUploadClick }: OnboardingProps) {
             </MotionButton>
           )}
 
-          {currentStep > 0 && (
+          {currentStep > 0 && !isLastStep && (
             <MotionButton
               variant="ghost"
               onClick={handlePrev}
@@ -245,10 +262,11 @@ export function Onboarding({ onUploadClick }: OnboardingProps) {
             {STEPS.map((_, i) => (
               <motion.div
                 key={i}
-                className="h-2 rounded-full bg-border"
+                className={`h-2 rounded-full transition-colors duration-200 ${
+                  i === currentStep ? "bg-foreground" : "bg-border"
+                }`}
                 animate={{
                   width: i === currentStep ? 32 : 8,
-                  backgroundColor: i === currentStep ? "hsl(var(--foreground))" : "hsl(var(--border))",
                 }}
                 transition={transitions.fast}
               />
@@ -307,28 +325,50 @@ export function Onboarding({ onUploadClick }: OnboardingProps) {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-between gap-4 mt-8 pt-6 border-t border-border">
-            <MotionButton
-              variant="ghost"
-              onClick={handlePrev}
-              disabled={currentStep === 0}
-              sound="click"
-              className={currentStep === 0 ? "invisible" : ""}
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back
-            </MotionButton>
-
+          <div className="mt-8 pt-6 border-t border-border">
             {isLastStep ? (
-              <MotionButton onClick={handleUpload} sound="click" size="lg">
-                <Upload className="w-4 h-4" />
-                Upload Statement
-              </MotionButton>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-4">
+                  <MotionButton
+                    variant="ghost"
+                    onClick={handlePrev}
+                    sound="click"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Back
+                  </MotionButton>
+                  <MotionButton onClick={handleUpload} sound="click" size="lg">
+                    <Upload className="w-4 h-4" />
+                    Upload Statement
+                  </MotionButton>
+                </div>
+                <MotionButton
+                  variant="secondary"
+                  onClick={handleSync}
+                  sound="click"
+                  className="w-full"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Sync from Another Device
+                </MotionButton>
+              </div>
             ) : (
-              <MotionButton onClick={handleNext} sound="click" size="lg">
-                Continue
-                <ChevronRight className="w-4 h-4" />
-              </MotionButton>
+              <div className="flex items-center justify-between gap-4">
+                <MotionButton
+                  variant="ghost"
+                  onClick={handlePrev}
+                  disabled={currentStep === 0}
+                  sound="click"
+                  className={currentStep === 0 ? "invisible" : ""}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Back
+                </MotionButton>
+                <MotionButton onClick={handleNext} sound="click" size="lg">
+                  Continue
+                  <ChevronRight className="w-4 h-4" />
+                </MotionButton>
+              </div>
             )}
           </div>
         </motion.div>

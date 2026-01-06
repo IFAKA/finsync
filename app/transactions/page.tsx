@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
@@ -20,10 +20,13 @@ import {
   useCategories,
   useAvailableMonths,
   useTransactionMutations,
+  useRuleMutations,
+  useFindSimilarTransactions,
   type LocalTransaction,
 } from "@/lib/hooks/use-local-db";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { TransactionDetailDialog } from "@/components/transaction-detail-dialog";
+import { CreateRuleModal } from "@/components/create-rule-modal";
 import { playSound } from "@/lib/sounds";
 
 const PAGE_SIZE = 25;
@@ -71,6 +74,15 @@ function TransactionsContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<LocalTransaction | null>(null);
 
+  // State for "similar transactions" pill and rule modal
+  const [recentlyCategorized, setRecentlyCategorized] = useState<{
+    transaction: LocalTransaction;
+    categoryId: string;
+    similarCount: number;
+  } | null>(null);
+  const [showCreateRuleModal, setShowCreateRuleModal] = useState(false);
+  const pillTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Use local-db hooks
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: availableMonths, isLoading: monthsLoading } = useAvailableMonths();
@@ -78,7 +90,9 @@ function TransactionsContent() {
     categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
     month: selectedMonth && selectedMonth !== "all" ? selectedMonth : undefined,
   });
-  const { update: updateTransaction } = useTransactionMutations();
+  const { update: updateTransaction, bulkUpdate, revertBulkUpdate } = useTransactionMutations();
+  const { create: createRule, remove: deleteRule } = useRuleMutations();
+  const { findSimilar } = useFindSimilarTransactions();
 
   // Debounce search
   useEffect(() => {
@@ -146,12 +160,113 @@ function TransactionsContent() {
   ) => {
     try {
       await updateTransaction(transaction.id, { categoryId: newCategoryId });
-      toast.success("Category updated");
       playSound("complete");
+
+      // Clear any existing pill timeout
+      if (pillTimeoutRef.current) {
+        clearTimeout(pillTimeoutRef.current);
+      }
+
+      // Find similar transactions
+      const desc = transaction.rawDescription || transaction.description;
+      const similar = await findSimilar({ descriptionContains: desc }, transaction.id);
+
+      if (similar.length > 0) {
+        // Show the pill
+        setRecentlyCategorized({
+          transaction: { ...transaction, categoryId: newCategoryId },
+          categoryId: newCategoryId,
+          similarCount: similar.length,
+        });
+
+        // Auto-hide after 8 seconds
+        pillTimeoutRef.current = setTimeout(() => {
+          setRecentlyCategorized(null);
+        }, 8000);
+      } else {
+        toast.success("Category updated");
+      }
     } catch {
       toast.error("Failed to update category");
       playSound("error");
     }
+  };
+
+  const handleCreateRuleSave = async (
+    criteria: {
+      name: string;
+      categoryId: string;
+      descriptionContains?: string;
+      amountEquals?: number;
+      amountMin?: number;
+      amountMax?: number;
+    },
+    matchingTransactionIds: string[]
+  ) => {
+    try {
+      // Include the original transaction in the bulk update
+      const allIds = recentlyCategorized
+        ? [recentlyCategorized.transaction.id, ...matchingTransactionIds]
+        : matchingTransactionIds;
+
+      // Bulk update transactions
+      const previousStates = await bulkUpdate(allIds, { categoryId: criteria.categoryId });
+
+      // Create the rule
+      const rule = await createRule({
+        name: criteria.name,
+        categoryId: criteria.categoryId,
+        descriptionContains: criteria.descriptionContains,
+        amountEquals: criteria.amountEquals,
+        amountMin: criteria.amountMin,
+        amountMax: criteria.amountMax,
+        priority: 0,
+        isEnabled: true,
+      });
+
+      setShowCreateRuleModal(false);
+      setRecentlyCategorized(null);
+      playSound("complete");
+
+      // Show undo toast
+      toast.success(`Rule saved · ${allIds.length} updated`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              // Revert transactions
+              await revertBulkUpdate(previousStates);
+              // Delete the rule
+              await deleteRule(rule.id);
+              toast.success("Changes reverted");
+              playSound("toggle");
+            } catch {
+              toast.error("Failed to undo");
+              playSound("error");
+            }
+          },
+        },
+        duration: 10000,
+      });
+    } catch {
+      toast.error("Failed to save rule");
+      playSound("error");
+    }
+  };
+
+  const handlePillClick = () => {
+    if (pillTimeoutRef.current) {
+      clearTimeout(pillTimeoutRef.current);
+    }
+    setShowCreateRuleModal(true);
+  };
+
+  const handlePillDismiss = () => {
+    if (pillTimeoutRef.current) {
+      clearTimeout(pillTimeoutRef.current);
+    }
+    setRecentlyCategorized(null);
+    toast.success("Category updated");
   };
 
   const handleCategoryFilterChange = (value: string) => {
@@ -530,6 +645,51 @@ function TransactionsContent() {
           </Button>
         </div>
       )}
+
+      {/* Similar Transactions Pill */}
+      <AnimatePresence>
+        {recentlyCategorized && !showCreateRuleModal && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 z-50"
+          >
+            <div className="bg-foreground text-background rounded-full shadow-lg flex items-center gap-1 pl-4 pr-1 py-1">
+              <span className="text-sm font-medium">
+                {recentlyCategorized.similarCount} similar
+              </span>
+              <button
+                onClick={handlePillClick}
+                className="text-sm font-medium px-3 py-1.5 rounded-full bg-background/20 hover:bg-background/30 transition-colors"
+              >
+                Create rule →
+              </button>
+              <button
+                onClick={handlePillDismiss}
+                className="p-1.5 rounded-full hover:bg-background/20 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create Rule Modal */}
+      <CreateRuleModal
+        open={showCreateRuleModal}
+        onOpenChange={(open) => {
+          setShowCreateRuleModal(open);
+          if (!open) {
+            // If modal closed without saving, dismiss the pill too
+            setRecentlyCategorized(null);
+          }
+        }}
+        prefillTransaction={recentlyCategorized?.transaction}
+        prefillCategoryId={recentlyCategorized?.categoryId}
+        onSave={handleCreateRuleSave}
+      />
 
       {/* Transaction Detail Dialog */}
       <TransactionDetailDialog

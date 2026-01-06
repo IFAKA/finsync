@@ -164,10 +164,11 @@ export function SpendingBarChart({ data, onCategoryClick }: SpendingBarChartProp
 
     if (expenses.length === 0) return;
 
-    const containerWidth = containerRef.current.clientWidth;
-    const width = containerWidth;
+    const containerWidth = containerRef.current.clientWidth || 300;
+    const width = Math.max(200, containerWidth);
     const height = expenses.length * 44;
     const margin = { top: 0, right: 60, bottom: 0, left: 100 };
+    const innerWidth = Math.max(40, width - margin.left - margin.right);
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -178,7 +179,7 @@ export function SpendingBarChart({ data, onCategoryClick }: SpendingBarChartProp
     const xScale = d3
       .scaleLinear()
       .domain([0, maxValue])
-      .range([0, width - margin.left - margin.right]);
+      .range([0, innerWidth]);
 
     const yScale = d3
       .scaleBand()

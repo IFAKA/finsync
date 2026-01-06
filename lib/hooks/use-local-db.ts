@@ -210,11 +210,46 @@ export function useTransactionMutations() {
     []
   );
 
+  const bulkUpdate = useCallback(
+    async (ids: string[], data: Partial<LocalTransaction>) => {
+      return localDB.bulkUpdateTransactions(ids, data);
+    },
+    []
+  );
+
+  const revertBulkUpdate = useCallback(
+    async (previousStates: { id: string; previousCategoryId?: string }[]) => {
+      return localDB.revertBulkUpdate(previousStates);
+    },
+    []
+  );
+
   const remove = useCallback(async (id: string) => {
     return localDB.deleteTransaction(id);
   }, []);
 
-  return { create, bulkCreate, update, remove };
+  return { create, bulkCreate, update, bulkUpdate, revertBulkUpdate, remove };
+}
+
+// Find similar transactions hook
+export function useFindSimilarTransactions() {
+  const findSimilar = useCallback(
+    async (
+      criteria: {
+        descriptionContains?: string;
+        amountMin?: number;
+        amountMax?: number;
+        amountEquals?: number;
+      },
+      excludeId?: string
+    ) => {
+      await ensureDbInitialized();
+      return localDB.findSimilarTransactions(criteria, excludeId);
+    },
+    []
+  );
+
+  return { findSimilar };
 }
 
 // Budgets hooks

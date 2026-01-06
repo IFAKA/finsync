@@ -1,24 +1,22 @@
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
+
+// Server snapshot always returns false to avoid hydration mismatch
+function getServerSnapshot(): boolean {
+  return false;
+}
 
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
+  const subscribe = (callback: () => void) => {
     const media = window.matchMedia(query);
+    media.addEventListener("change", callback);
+    return () => media.removeEventListener("change", callback);
+  };
 
-    // Set initial value
-    setMatches(media.matches);
+  const getSnapshot = () => {
+    return window.matchMedia(query).matches;
+  };
 
-    // Listen for changes
-    const listener = (e: MediaQueryListEvent) => {
-      setMatches(e.matches);
-    };
-
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
-  }, [query]);
-
-  return matches;
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
 // Convenience hooks for common breakpoints

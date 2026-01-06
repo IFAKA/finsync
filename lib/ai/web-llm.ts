@@ -14,6 +14,91 @@ export type LoadingCallback = (progress: {
 
 const MODEL_ID = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
 
+// Rule matching types
+export interface Rule {
+  id: string;
+  categoryId: string;
+  descriptionContains?: string;
+  amountEquals?: number;
+  amountMin?: number;
+  amountMax?: number;
+  isEnabled: boolean;
+  priority: number;
+}
+
+export interface RuleMatchResult {
+  index: number;
+  categoryId: string;
+  confidence: number;
+  matchedRule: string;
+}
+
+// Apply rules to transactions - returns matches and unmatched indices
+export function applyRules(
+  transactions: { description: string; amount: number }[],
+  rules: Rule[]
+): { matches: RuleMatchResult[]; unmatchedIndices: number[] } {
+  const enabledRules = rules
+    .filter((r) => r.isEnabled)
+    .sort((a, b) => b.priority - a.priority);
+
+  const matches: RuleMatchResult[] = [];
+  const matchedIndices = new Set<number>();
+
+  for (let i = 0; i < transactions.length; i++) {
+    const tx = transactions[i];
+    const descUpper = tx.description.toUpperCase();
+
+    for (const rule of enabledRules) {
+      let isMatch = true;
+
+      // Check description contains (case-insensitive)
+      if (rule.descriptionContains) {
+        if (!descUpper.includes(rule.descriptionContains.toUpperCase())) {
+          isMatch = false;
+        }
+      }
+
+      // Check exact amount
+      if (rule.amountEquals !== undefined && isMatch) {
+        if (Math.abs(tx.amount - rule.amountEquals) > 0.01) {
+          isMatch = false;
+        }
+      }
+
+      // Check amount range
+      if (rule.amountMin !== undefined && isMatch) {
+        if (tx.amount < rule.amountMin) {
+          isMatch = false;
+        }
+      }
+
+      if (rule.amountMax !== undefined && isMatch) {
+        if (tx.amount > rule.amountMax) {
+          isMatch = false;
+        }
+      }
+
+      if (isMatch) {
+        matches.push({
+          index: i + 1, // 1-indexed to match LLM output
+          categoryId: rule.categoryId,
+          confidence: 1.0, // Rules are 100% confident
+          matchedRule: rule.id,
+        });
+        matchedIndices.add(i);
+        break; // Stop at first matching rule
+      }
+    }
+  }
+
+  const unmatchedIndices = transactions
+    .map((_, i) => i)
+    .filter((i) => !matchedIndices.has(i));
+
+  return { matches, unmatchedIndices };
+}
+
 export async function initWebLLM(
   onProgress?: LoadingCallback
 ): Promise<webllm.MLCEngine> {
@@ -89,61 +174,231 @@ interface TransactionInput {
   date: string;
 }
 
-interface CategorizationResult {
+export interface CategorizationResult {
   index: number;
   category: string;
   confidence: number;
   merchant?: string;
 }
 
+// Examples of past categorizations to help the model
+export interface CategoryExample {
+  category: string;
+  examples: string[]; // Transaction descriptions
+}
+
+// Process transactions in batches to avoid context window overflow
+const BATCH_SIZE = 8; // Reduced to fit examples in context
+
 export async function categorizeTransactionsWithWebLLM(
   transactions: TransactionInput[],
   categories: string[],
-  onProgress?: LoadingCallback
+  onProgress?: LoadingCallback,
+  categoryExamples?: CategoryExample[]
 ): Promise<CategorizationResult[]> {
-  await initWebLLM(onProgress);
+  console.log("[WebLLM] categorizeTransactionsWithWebLLM called with", transactions.length, "transactions");
+  console.log("[WebLLM] Categories:", categories);
+  console.log("[WebLLM] Examples provided:", categoryExamples?.length || 0);
 
-  const systemPrompt = `You are a financial transaction categorizer. Respond ONLY with a JSON array, no other text.
-
-Rules:
-- Categorize by PURPOSE, not payment method
-- Transfer/Bizum for rent → Housing
-- Extract merchant name (e.g., "MERCADONA EL FONTAN" → "Mercadona")
-- Confidence: 0.9 for clear, 0.7 for educated guess, 0.5 for uncertain`;
-
-  const prompt = `Categories: ${categories.join(", ")}
-
-Transactions:
-${transactions.map((t, i) => `${i + 1}. "${t.description}" - ${t.amount}€`).join("\n")}
-
-Respond with JSON array only:
-[{"index": 1, "category": "CategoryName", "confidence": 0.9, "merchant": "Name"}]`;
-
-  try {
-    const response = await generateCompletion(prompt, systemPrompt);
-    return parseCategorizationResponse(response);
-  } catch (error) {
-    console.error("WebLLM categorization failed:", error);
+  if (transactions.length === 0) {
     return [];
   }
+
+  await initWebLLM(onProgress);
+  console.log("[WebLLM] Model initialized");
+
+  // Build examples section if we have past categorizations
+  let examplesSection = "";
+  if (categoryExamples && categoryExamples.length > 0) {
+    const exampleLines = categoryExamples
+      .filter((ce) => ce.examples.length > 0)
+      .map((ce) => `${ce.category}: ${ce.examples.slice(0, 3).join(", ")}`)
+      .join("\n");
+    if (exampleLines) {
+      examplesSection = `\nExamples:\n${exampleLines}\n`;
+    }
+  }
+
+  const systemPrompt = `You categorize bank transactions into categories. Output ONLY a JSON array.
+
+Instructions:
+- Match by merchant/purpose, not amount
+- Extract clean merchant name from description
+- Confidence: 0.9=obvious match, 0.7=likely, 0.5=guess
+- Use exact category names provided
+${examplesSection}
+Respond with JSON array only, no explanation.`;
+
+  const allResults: CategorizationResult[] = [];
+  const totalBatches = Math.ceil(transactions.length / BATCH_SIZE);
+  console.log("[WebLLM] Will process", totalBatches, "batches");
+
+  for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+    const start = batchIndex * BATCH_SIZE;
+    const end = Math.min(start + BATCH_SIZE, transactions.length);
+    const batch = transactions.slice(start, end);
+
+    onProgress?.({
+      stage: "loading",
+      progress: batchIndex / totalBatches,
+      text: `Categorizing ${start + 1}-${end} of ${transactions.length}...`,
+    });
+
+    // Build compact transaction list
+    const txList = batch
+      .map((t, i) => {
+        const sign = t.amount >= 0 ? "+" : "";
+        return `${start + i + 1}. ${t.description} (${sign}${t.amount})`;
+      })
+      .join("\n");
+
+    const prompt = `Categories: ${categories.join(", ")}
+
+Transactions:
+${txList}
+
+Output format: [{"index":1,"category":"CategoryName","confidence":0.9,"merchant":"Name"}]`;
+
+    try {
+      const response = await generateCompletion(prompt, systemPrompt);
+      console.log(`[WebLLM] Batch ${batchIndex + 1} response:`, response);
+      const results = parseCategorizationResponse(response, categories);
+      console.log(`[WebLLM] Batch ${batchIndex + 1} parsed:`, results);
+      allResults.push(...results);
+    } catch (error) {
+      console.error(`[WebLLM] Batch ${batchIndex + 1} failed:`, error);
+    }
+  }
+
+  onProgress?.({
+    stage: "ready",
+    progress: 1,
+    text: `Categorized ${allResults.length} of ${transactions.length}`,
+  });
+
+  return allResults;
 }
 
-function parseCategorizationResponse(response: string): CategorizationResult[] {
+// Find best matching category name (fuzzy match)
+function findBestCategory(input: string, categories: string[]): string | null {
+  const inputLower = input.toLowerCase().trim();
+
+  // Exact match first
+  const exact = categories.find((c) => c.toLowerCase() === inputLower);
+  if (exact) return exact;
+
+  // Partial match (category contains input or input contains category)
+  const partial = categories.find(
+    (c) =>
+      c.toLowerCase().includes(inputLower) ||
+      inputLower.includes(c.toLowerCase())
+  );
+  if (partial) return partial;
+
+  // Word overlap match
+  const inputWords = inputLower.split(/\s+/);
+  let bestMatch: string | null = null;
+  let bestScore = 0;
+
+  for (const cat of categories) {
+    const catWords = cat.toLowerCase().split(/\s+/);
+    const overlap = inputWords.filter((w) => catWords.includes(w)).length;
+    if (overlap > bestScore) {
+      bestScore = overlap;
+      bestMatch = cat;
+    }
+  }
+
+  return bestScore > 0 ? bestMatch : null;
+}
+
+// Sanitize LLM-generated JSON to fix common issues
+function sanitizeJson(jsonStr: string): string {
+  let result = jsonStr;
+
+  // Replace single quotes with double quotes (but not inside strings)
+  // This handles: {'key': 'value'} -> {"key": "value"}
+  result = result.replace(/'/g, '"');
+
+  // Fix unquoted property names: {index: 1} -> {"index": 1}
+  result = result.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)/g, '$1"$2"$3');
+
+  // Remove trailing commas before ] or }
+  result = result.replace(/,(\s*[}\]])/g, "$1");
+
+  // Fix missing commas between objects: }{  -> },{
+  result = result.replace(/}(\s*){/g, "},$1{");
+
+  return result;
+}
+
+function parseCategorizationResponse(
+  response: string,
+  categories: string[]
+): CategorizationResult[] {
   try {
-    const jsonMatch = response.match(/\[[\s\S]*?\]/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      if (Array.isArray(parsed)) {
-        return parsed.map((item) => ({
-          index: Number(item.index),
-          category: String(item.category),
-          confidence: Number(item.confidence) || 0.5,
-          merchant: item.merchant ? String(item.merchant) : undefined,
-        }));
+    // Find the JSON array by matching balanced brackets
+    const startIdx = response.indexOf("[");
+    if (startIdx === -1) {
+      console.warn("[WebLLM Parse] No JSON array found in response");
+      return [];
+    }
+
+    let depth = 0;
+    let endIdx = -1;
+    for (let i = startIdx; i < response.length; i++) {
+      if (response[i] === "[") depth++;
+      else if (response[i] === "]") {
+        depth--;
+        if (depth === 0) {
+          endIdx = i;
+          break;
+        }
       }
     }
+
+    if (endIdx === -1) {
+      console.warn("[WebLLM Parse] Unbalanced brackets in response");
+      return [];
+    }
+
+    let jsonStr = response.slice(startIdx, endIdx + 1);
+    console.log("[WebLLM Parse] Extracted JSON:", jsonStr);
+
+    // Try parsing as-is first, then sanitized
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      console.log("[WebLLM Parse] Initial parse failed, attempting sanitization");
+      jsonStr = sanitizeJson(jsonStr);
+      console.log("[WebLLM Parse] Sanitized JSON:", jsonStr);
+      parsed = JSON.parse(jsonStr);
+    }
+
+    if (Array.isArray(parsed)) {
+      const results: CategorizationResult[] = [];
+
+      for (const item of parsed) {
+        const rawCategory = String(item.category || "");
+        const matchedCategory = findBestCategory(rawCategory, categories);
+
+        if (matchedCategory) {
+          results.push({
+            index: Number(item.index),
+            category: matchedCategory,
+            confidence: Math.min(1, Math.max(0, Number(item.confidence) || 0.5)),
+            merchant: item.merchant ? String(item.merchant).trim() : undefined,
+          });
+        } else {
+          console.warn(`[WebLLM Parse] Unknown category "${rawCategory}", skipping`);
+        }
+      }
+
+      return results;
+    }
   } catch (error) {
-    console.error("Failed to parse response:", error);
+    console.error("[WebLLM Parse] Failed:", error);
   }
   return [];
 }

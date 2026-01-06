@@ -28,7 +28,8 @@ self.addEventListener('install', (event) => {
       );
     })
   );
-  self.skipWaiting();
+  // Don't skipWaiting automatically - let the app control when to activate
+  // This prevents version mismatches between cached JS and new HTML
 });
 
 // Activate event - clean old caches

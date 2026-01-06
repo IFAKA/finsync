@@ -13,9 +13,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { UploadDropzone, type UploadResult } from "@/components/upload-dropzone";
 import { TransactionPreview } from "@/components/transaction-preview";
+import { SyncDialog } from "@/components/sync-dialog";
 import { parseExcelBuffer } from "@/lib/excel/parser";
 import { playSound } from "@/lib/sounds";
 import { toast } from "sonner";
@@ -27,6 +29,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [syncOpen, setSyncOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   const isLandscape = useIsLandscape();
@@ -120,6 +123,14 @@ function AppContent({ children }: { children: ReactNode }) {
     }
   };
 
+  const handleOnboardingSync = () => {
+    setSyncOpen(true);
+  };
+
+  const handleSyncComplete = () => {
+    completeOnboarding();
+  };
+
   // Show nothing while loading to prevent flash
   if (isLoading) {
     return null;
@@ -139,13 +150,27 @@ function AppContent({ children }: { children: ReactNode }) {
         />
 
         <main className="min-h-screen">
-          <Onboarding onUploadClick={handleOnboardingUpload} />
+          <Onboarding
+            onUploadClick={handleOnboardingUpload}
+            onSyncClick={handleOnboardingSync}
+          />
         </main>
+
+        {/* Sync dialog for onboarding - starts in join mode */}
+        <SyncDialog
+          open={syncOpen}
+          onOpenChange={setSyncOpen}
+          initialMode="join"
+          onSyncComplete={handleSyncComplete}
+        />
 
         {/* Mobile portrait: Bottom drawer for preview */}
         {useDrawerUI ? (
           <Drawer open={uploadOpen} onOpenChange={handleOpenChange}>
-            <DrawerContent className="max-h-[85vh]">
+            <DrawerContent className="max-h-[85vh]" aria-describedby={undefined}>
+              <VisuallyHidden.Root>
+                <DrawerTitle>Import transactions</DrawerTitle>
+              </VisuallyHidden.Root>
               {isProcessingFile ? (
                 <div className="flex flex-col items-center justify-center py-12 px-4">
                   <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mb-4" />
@@ -179,13 +204,18 @@ function AppContent({ children }: { children: ReactNode }) {
                   <UploadDropzone onUploadComplete={handleUploadComplete} />
                 </>
               ) : (
-                <TransactionPreview
-                  filename={uploadResult.filename}
-                  bankName={uploadResult.bankName}
-                  transactions={uploadResult.transactions}
-                  onBack={handleBack}
-                  onImportComplete={handleImportComplete}
-                />
+                <>
+                  <VisuallyHidden.Root>
+                    <DialogTitle>Review transactions</DialogTitle>
+                  </VisuallyHidden.Root>
+                  <TransactionPreview
+                    filename={uploadResult.filename}
+                    bankName={uploadResult.bankName}
+                    transactions={uploadResult.transactions}
+                    onBack={handleBack}
+                    onImportComplete={handleImportComplete}
+                  />
+                </>
               )}
             </DialogContent>
           </Dialog>

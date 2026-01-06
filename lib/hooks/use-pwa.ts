@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -22,10 +22,14 @@ export interface UsePWAReturn {
   isStandalone: boolean;
   /** Whether the service worker is registered and active */
   isServiceWorkerActive: boolean;
+  /** Whether a new version is waiting to be activated */
+  updateAvailable: boolean;
   /** Trigger the install prompt */
   install: () => Promise<boolean>;
   /** Check if there's a service worker update available */
   checkForUpdates: () => Promise<boolean>;
+  /** Apply the pending update and reload */
+  applyUpdate: () => void;
 }
 
 export function usePWA(): UsePWAReturn {
@@ -34,6 +38,8 @@ export function usePWA(): UsePWAReturn {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isServiceWorkerActive, setIsServiceWorkerActive] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
     // Only run on client
@@ -74,11 +80,29 @@ export function usePWA(): UsePWAReturn {
         .register("/sw.js")
         .then((registration) => {
           console.log("Service Worker registered:", registration.scope);
+          registrationRef.current = registration;
           setIsServiceWorkerActive(!!registration.active);
 
-          // Check for updates periodically
+          // Check if there's already a waiting worker
+          if (registration.waiting) {
+            setUpdateAvailable(true);
+          }
+
+          // Listen for new service worker installing
           registration.addEventListener("updatefound", () => {
-            console.log("Service Worker update found");
+            const newWorker = registration.installing;
+            if (!newWorker) return;
+
+            newWorker.addEventListener("statechange", () => {
+              // When the new worker is installed and waiting
+              if (
+                newWorker.state === "installed" &&
+                navigator.serviceWorker.controller
+              ) {
+                console.log("New version available");
+                setUpdateAvailable(true);
+              }
+            });
           });
         })
         .catch((err) => {
@@ -89,6 +113,14 @@ export function usePWA(): UsePWAReturn {
       if (navigator.serviceWorker.controller) {
         setIsServiceWorkerActive(true);
       }
+
+      // Reload when the new service worker takes over
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
     }
 
     return () => {
@@ -126,7 +158,9 @@ export function usePWA(): UsePWAReturn {
       const registration = await navigator.serviceWorker.getRegistration();
       if (registration) {
         await registration.update();
-        return !!registration.waiting;
+        const hasUpdate = !!registration.waiting;
+        setUpdateAvailable(hasUpdate);
+        return hasUpdate;
       }
     } catch (err) {
       console.error("Update check error:", err);
@@ -135,12 +169,38 @@ export function usePWA(): UsePWAReturn {
     return false;
   }, []);
 
+  const applyUpdate = useCallback(() => {
+    const registration = registrationRef.current;
+    if (!registration?.waiting) return;
+
+    // Tell the waiting service worker to skip waiting
+    registration.waiting.postMessage("skipWaiting");
+    // The controllerchange event listener will handle the reload
+  }, []);
+
+  // Auto-update when app is backgrounded (user switches tab/app)
+  useEffect(() => {
+    if (!updateAvailable) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        applyUpdate();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [updateAvailable, applyUpdate]);
+
   return {
     canInstall: !!installPrompt && !isStandalone,
     isInstalled,
     isStandalone,
     isServiceWorkerActive,
+    updateAvailable,
     install,
     checkForUpdates,
+    applyUpdate,
   };
 }

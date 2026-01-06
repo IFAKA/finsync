@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { Card, CardContent } from "@/components/ui/card";
 import { useP2PSync } from "@/lib/hooks/use-p2p-sync";
 import {
@@ -33,9 +34,13 @@ import {
   getRoomExpirySeconds,
 } from "@/lib/p2p/room-code";
 
+type DialogMode = "choose" | "create" | "join" | "syncing" | "success";
+
 interface SyncDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialMode?: DialogMode;
+  onSyncComplete?: () => void;
 }
 
 // Animated card component for sync options
@@ -93,10 +98,8 @@ function SyncOptionCard({
   );
 }
 
-type DialogMode = "choose" | "create" | "join" | "syncing" | "success";
-
-export function SyncDialog({ open, onOpenChange }: SyncDialogProps) {
-  const [mode, setMode] = useState<DialogMode>("choose");
+export function SyncDialog({ open, onOpenChange, initialMode = "choose", onSyncComplete }: SyncDialogProps) {
+  const [mode, setMode] = useState<DialogMode>(initialMode);
   const [inputCode, setInputCode] = useState("");
   const [copied, setCopied] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -118,6 +121,13 @@ export function SyncDialog({ open, onOpenChange }: SyncDialogProps) {
     isSyncing,
   } = useP2PSync();
 
+  // Reset to initialMode when dialog opens
+  useEffect(() => {
+    if (open) {
+      setMode(initialMode);
+    }
+  }, [open, initialMode]);
+
   // Auto-transition to syncing mode when connected
   useEffect(() => {
     if (isConnected && mode !== "syncing" && mode !== "success") {
@@ -138,18 +148,21 @@ export function SyncDialog({ open, onOpenChange }: SyncDialogProps) {
       setHasCompletedSync(true);
       setMode("success");
 
+      // Call onSyncComplete callback if provided
+      onSyncComplete?.();
+
       // Auto-close after 2 seconds
       const timer = setTimeout(() => {
         disconnect();
         onOpenChange(false);
-        setMode("choose");
+        setMode(initialMode);
         setHasStartedSync(false);
         setHasCompletedSync(false);
       }, 2000);
 
       return () => clearTimeout(timer);
     }
-  }, [isConnected, isSyncing, hasStartedSync, mode, hasCompletedSync, disconnect, onOpenChange]);
+  }, [isConnected, isSyncing, hasStartedSync, mode, hasCompletedSync, disconnect, onOpenChange, onSyncComplete, initialMode]);
 
   const handleCreateRoom = async () => {
     setMode("create");
@@ -255,7 +268,7 @@ export function SyncDialog({ open, onOpenChange }: SyncDialogProps) {
   // Reset mode when dialog closes
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      setMode("choose");
+      setMode(initialMode);
       setInputCode("");
       setJoinError(null);
       setHasStartedSync(false);
@@ -483,6 +496,9 @@ export function SyncDialog({ open, onOpenChange }: SyncDialogProps) {
               exit={{ opacity: 0, scale: 0.95 }}
               className="py-8"
             >
+              <VisuallyHidden.Root>
+                <DialogTitle>Syncing devices</DialogTitle>
+              </VisuallyHidden.Root>
               <div className="flex flex-col items-center justify-center space-y-6">
                 <motion.div
                   animate={{ rotate: 360 }}
@@ -519,6 +535,9 @@ export function SyncDialog({ open, onOpenChange }: SyncDialogProps) {
               exit={{ opacity: 0, scale: 0.9 }}
               className="py-8"
             >
+              <VisuallyHidden.Root>
+                <DialogTitle>Sync complete</DialogTitle>
+              </VisuallyHidden.Root>
               <div className="flex flex-col items-center justify-center space-y-6">
                 <motion.div
                   initial={{ scale: 0 }}

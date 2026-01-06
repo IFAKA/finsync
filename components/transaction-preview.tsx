@@ -5,10 +5,18 @@ import { ArrowLeft, Loader2, Sparkles, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { useTransactionMutations, useCategories } from "@/lib/hooks/use-local-db";
+import { useTransactionMutations, useCategories, useRules } from "@/lib/hooks/use-local-db";
 import { generateId, localDB } from "@/lib/db/local-db";
 import { playSound } from "@/lib/sounds";
-import { categorizeTransactionsWithWebLLM, isModelLoaded, isModelLoading, initWebLLM } from "@/lib/ai/web-llm";
+import {
+  categorizeTransactionsWithWebLLM,
+  isModelLoaded,
+  isModelLoading,
+  initWebLLM,
+  applyRules,
+  type CategoryExample,
+  type Rule,
+} from "@/lib/ai/web-llm";
 
 interface ParsedTransaction {
   date: string;
@@ -45,6 +53,7 @@ export function TransactionPreview({
 
   const { bulkCreate } = useTransactionMutations();
   const { data: categories } = useCategories();
+  const { data: rules } = useRules();
 
   // Check for duplicates when component mounts
   useEffect(() => {
@@ -123,60 +132,207 @@ export function TransactionPreview({
         };
       });
 
-      // Step 1: Categorize first (if categories exist)
+      // Step 1: Categorize (rules first, then AI for remaining)
+      console.log("[Import] Categories available:", categories.length, categories.map(c => c.name));
+      console.log("[Import] Rules available:", rules.length);
+      console.log("[Import] Transactions to categorize:", transactionsToSave.length);
+
       if (categories.length > 0) {
-        // Wait for model to be ready if it's still loading
-        if (!modelReady) {
-          setStatus("Waiting for AI model…");
-          await initWebLLM((progress) => {
-            setAiProgress(progress.text);
-          });
-        }
-
         setIsCategorizing(true);
-        setStatus("Categorizing with AI…");
+        const categoryNames = categories.map((c) => c.name);
+        const categoryMap = new Map(categories.map((c) => [c.name, c.id]));
+        const categoryIdToName = new Map(categories.map((c) => [c.id, c.name]));
 
-        try {
-          const categoryNames = categories.map((c) => c.name);
-          const categoryMap = new Map(categories.map((c) => [c.name, c.id]));
+        let ruleMatchCount = 0;
+        let aiMatchCount = 0;
 
-          const results = await categorizeTransactionsWithWebLLM(
+        // Step 1a: Apply rules first (instant, 100% confidence)
+        if (rules.length > 0) {
+          setStatus("Applying rules…");
+          const rulesForMatching: Rule[] = rules.map((r) => ({
+            id: r.id,
+            categoryId: r.categoryId,
+            descriptionContains: r.descriptionContains,
+            amountEquals: r.amountEquals,
+            amountMin: r.amountMin,
+            amountMax: r.amountMax,
+            isEnabled: r.isEnabled,
+            priority: r.priority,
+          }));
+
+          const { matches: ruleMatches, unmatchedIndices } = applyRules(
             transactionsToSave.map((t) => ({
               description: t.rawDescription,
               amount: t.amount,
-              date: t.date.toISOString().split("T")[0],
             })),
-            categoryNames,
-            (progress) => {
-              setAiProgress(progress.text);
-            }
+            rulesForMatching
           );
 
-          // Apply categories to transactions in memory
-          for (const result of results) {
-            const tx = transactionsToSave[result.index - 1];
+          console.log("[Import] Rule matches:", ruleMatches.length);
+          console.log("[Import] Unmatched for AI:", unmatchedIndices.length);
+
+          // Apply rule matches
+          for (const match of ruleMatches) {
+            const tx = transactionsToSave[match.index - 1];
             if (tx) {
-              const categoryId = categoryMap.get(result.category);
-              if (categoryId) {
-                tx.categoryId = categoryId;
-                tx.categoryConfidence = result.confidence;
-                tx.merchant = result.merchant;
-                tx.needsReview = result.confidence < 0.6;
-              }
+              tx.categoryId = match.categoryId;
+              tx.categoryConfidence = 1.0;
+              tx.needsReview = false; // Rules are trusted
+              ruleMatchCount++;
             }
           }
-        } catch (error) {
-          // Categorization failed - abort import
-          console.error("Categorization failed:", error);
-          setStatus("Categorization failed");
-          setAiProgress("");
-          setIsCategorizing(false);
-          setIsImporting(false);
-          toast.error("Categorization failed - import aborted");
-          playSound("error");
-          return;
+
+          // Step 1b: Use AI for remaining unmatched transactions
+          if (unmatchedIndices.length > 0) {
+            // Wait for model to be ready if it's still loading
+            if (!modelReady) {
+              setStatus("Loading AI model…");
+              await initWebLLM((progress) => {
+                setAiProgress(progress.text);
+              });
+            }
+
+            setStatus(`Categorizing ${unmatchedIndices.length} with AI…`);
+
+            try {
+              // Get examples from past categorized transactions
+              const existingTxs = await localDB.getTransactions();
+              const categorizedTxs = existingTxs.filter((t) => t.categoryId && t.categoryConfidence && t.categoryConfidence >= 0.8);
+
+              const examplesByCategory = new Map<string, string[]>();
+              for (const tx of categorizedTxs.slice(-200)) { // Last 200 transactions
+                const catName = categoryIdToName.get(tx.categoryId!);
+                if (catName) {
+                  const examples = examplesByCategory.get(catName) || [];
+                  if (examples.length < 5) {
+                    examples.push(tx.description);
+                    examplesByCategory.set(catName, examples);
+                  }
+                }
+              }
+
+              const categoryExamples: CategoryExample[] = Array.from(examplesByCategory.entries()).map(
+                ([category, examples]) => ({ category, examples })
+              );
+
+              console.log("[Import] Built examples for", categoryExamples.length, "categories");
+
+              // Only categorize unmatched transactions
+              const unmatchedTxs = unmatchedIndices.map((i) => ({
+                description: transactionsToSave[i].rawDescription,
+                amount: transactionsToSave[i].amount,
+                date: transactionsToSave[i].date.toISOString().split("T")[0],
+                originalIndex: i,
+              }));
+
+              const results = await categorizeTransactionsWithWebLLM(
+                unmatchedTxs.map((t) => ({
+                  description: t.description,
+                  amount: t.amount,
+                  date: t.date,
+                })),
+                categoryNames,
+                (progress) => {
+                  setAiProgress(progress.text);
+                },
+                categoryExamples
+              );
+
+              // Apply AI categories (using originalIndex to map back)
+              console.log("[Import] AI returned", results.length, "categorization results");
+              for (const result of results) {
+                const originalIndex = unmatchedTxs[result.index - 1]?.originalIndex;
+                if (originalIndex !== undefined) {
+                  const tx = transactionsToSave[originalIndex];
+                  if (tx) {
+                    const categoryId = categoryMap.get(result.category);
+                    if (categoryId) {
+                      tx.categoryId = categoryId;
+                      tx.categoryConfidence = result.confidence;
+                      tx.merchant = result.merchant;
+                      tx.needsReview = result.confidence < 0.7;
+                      aiMatchCount++;
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              console.error("AI categorization failed:", error);
+              // Don't abort - we already have rule matches
+              toast.warning("AI categorization failed, using rules only");
+            }
+          }
+        } else {
+          // No rules, use AI for everything
+          if (!modelReady) {
+            setStatus("Loading AI model…");
+            await initWebLLM((progress) => {
+              setAiProgress(progress.text);
+            });
+          }
+
+          setStatus("Categorizing with AI…");
+
+          try {
+            // Get examples from past categorized transactions
+            const existingTxs = await localDB.getTransactions();
+            const categorizedTxs = existingTxs.filter((t) => t.categoryId && t.categoryConfidence && t.categoryConfidence >= 0.8);
+
+            const examplesByCategory = new Map<string, string[]>();
+            for (const tx of categorizedTxs.slice(-200)) {
+              const catName = categoryIdToName.get(tx.categoryId!);
+              if (catName) {
+                const examples = examplesByCategory.get(catName) || [];
+                if (examples.length < 5) {
+                  examples.push(tx.description);
+                  examplesByCategory.set(catName, examples);
+                }
+              }
+            }
+
+            const categoryExamples: CategoryExample[] = Array.from(examplesByCategory.entries()).map(
+              ([category, examples]) => ({ category, examples })
+            );
+
+            const results = await categorizeTransactionsWithWebLLM(
+              transactionsToSave.map((t) => ({
+                description: t.rawDescription,
+                amount: t.amount,
+                date: t.date.toISOString().split("T")[0],
+              })),
+              categoryNames,
+              (progress) => {
+                setAiProgress(progress.text);
+              },
+              categoryExamples
+            );
+
+            for (const result of results) {
+              const tx = transactionsToSave[result.index - 1];
+              if (tx) {
+                const categoryId = categoryMap.get(result.category);
+                if (categoryId) {
+                  tx.categoryId = categoryId;
+                  tx.categoryConfidence = result.confidence;
+                  tx.merchant = result.merchant;
+                  tx.needsReview = result.confidence < 0.7;
+                  aiMatchCount++;
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Categorization failed:", error);
+            setStatus("Categorization failed");
+            setAiProgress("");
+            setIsCategorizing(false);
+            setIsImporting(false);
+            toast.error("Categorization failed - import aborted");
+            playSound("error");
+            return;
+          }
         }
 
+        console.log("[Import] Final: Rules matched", ruleMatchCount, ", AI matched", aiMatchCount);
         setIsCategorizing(false);
       }
 

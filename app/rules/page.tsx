@@ -5,15 +5,14 @@ import { motion } from "framer-motion";
 import { Plus, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  ResponsiveModal,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+} from "@/components/ui/responsive-modal";
 import { useRules, useCategories, useRuleMutations } from "@/lib/hooks/use-local-db";
 import { formatCurrency } from "@/lib/utils";
 import { playSound } from "@/lib/sounds";
@@ -135,26 +134,25 @@ export default function RulesPage() {
         </Button>
       </motion.div>
 
-      {/* Mobile Drawer */}
-      <Drawer open={isCreating} onOpenChange={setIsCreating}>
-        <DrawerContent className="sm:hidden">
-          <DrawerHeader>
-            <DrawerTitle>New Rule</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-6 space-y-3">
+      {/* New Rule Modal - uses Dialog on desktop, Drawer on mobile */}
+      <ResponsiveModal open={isCreating} onOpenChange={setIsCreating}>
+        <ResponsiveModalHeader>
+          <ResponsiveModalTitle>New Rule</ResponsiveModalTitle>
+        </ResponsiveModalHeader>
+        <div className="space-y-4 p-4 sm:p-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">Rule Name</label>
+              <label className="text-sm font-medium">Rule Name</label>
               <Input
                 placeholder="e.g., Monthly Rent"
                 value={newRule.name}
                 onChange={(e) => setNewRule({ ...newRule, name: e.target.value })}
-                className="h-10"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">Category</label>
+              <label className="text-sm font-medium">Category</label>
               <select
-                className="w-full h-10 px-3 border rounded-md bg-background text-sm"
+                className="w-full h-9 px-3 border rounded-md bg-background text-sm"
                 value={newRule.categoryId}
                 onChange={(e) => setNewRule({ ...newRule, categoryId: e.target.value })}
               >
@@ -164,89 +162,56 @@ export default function RulesPage() {
                 ))}
               </select>
             </div>
-            <div className="border-t pt-3">
-              <p className="text-xs font-medium mb-2">Conditions (at least one)</p>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Exact Amount</label>
-                  <Input type="number" step="0.01" placeholder="-395" value={newRule.amountEquals} onChange={(e) => setNewRule({ ...newRule, amountEquals: e.target.value })} className="h-10" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Contains</label>
-                  <Input placeholder="ALQUILER" value={newRule.descriptionContains} onChange={(e) => setNewRule({ ...newRule, descriptionContains: e.target.value })} className="h-10" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Min</label>
-                  <Input type="number" step="0.01" placeholder="-500" value={newRule.amountMin} onChange={(e) => setNewRule({ ...newRule, amountMin: e.target.value })} className="h-10" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Max</label>
-                  <Input type="number" step="0.01" placeholder="-300" value={newRule.amountMax} onChange={(e) => setNewRule({ ...newRule, amountMax: e.target.value })} className="h-10" />
-                </div>
+          </div>
+          <div className="border-t pt-4">
+            <p className="text-sm font-medium mb-3">Conditions (at least one)</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Exact Amount</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="-395"
+                  value={newRule.amountEquals}
+                  onChange={(e) => setNewRule({ ...newRule, amountEquals: e.target.value })}
+                />
               </div>
-            </div>
-            <div className="flex gap-2 pt-2">
-              <Button variant="secondary" className="flex-1" onClick={() => setIsCreating(false)}>Cancel</Button>
-              <Button className="flex-1" onClick={handleCreate}>Create</Button>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Contains</label>
+                <Input
+                  placeholder="ALQUILER"
+                  value={newRule.descriptionContains}
+                  onChange={(e) => setNewRule({ ...newRule, descriptionContains: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Min</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="-500"
+                  value={newRule.amountMin}
+                  onChange={(e) => setNewRule({ ...newRule, amountMin: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Max</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="-300"
+                  value={newRule.amountMax}
+                  onChange={(e) => setNewRule({ ...newRule, amountMax: e.target.value })}
+                />
+              </div>
             </div>
           </div>
-        </DrawerContent>
-      </Drawer>
-
-      {/* Desktop Form */}
-      {isCreating && (
-        <Card className="hidden sm:block">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base">New Rule</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Rule Name</label>
-                <Input placeholder="e.g., Monthly Rent" value={newRule.name} onChange={(e) => setNewRule({ ...newRule, name: e.target.value })} className="h-9" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Category</label>
-                <select
-                  className="w-full h-9 px-3 border rounded-md bg-background text-sm"
-                  value={newRule.categoryId}
-                  onChange={(e) => setNewRule({ ...newRule, categoryId: e.target.value })}
-                >
-                  <option value="">Select category...</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="border-t pt-4">
-              <p className="text-sm font-medium mb-3">Conditions (at least one)</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Exact Amount</label>
-                  <Input type="number" step="0.01" placeholder="-395" value={newRule.amountEquals} onChange={(e) => setNewRule({ ...newRule, amountEquals: e.target.value })} className="h-9" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Contains</label>
-                  <Input placeholder="ALQUILER" value={newRule.descriptionContains} onChange={(e) => setNewRule({ ...newRule, descriptionContains: e.target.value })} className="h-9" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Min</label>
-                  <Input type="number" step="0.01" placeholder="-500" value={newRule.amountMin} onChange={(e) => setNewRule({ ...newRule, amountMin: e.target.value })} className="h-9" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Max</label>
-                  <Input type="number" step="0.01" placeholder="-300" value={newRule.amountMax} onChange={(e) => setNewRule({ ...newRule, amountMax: e.target.value })} className="h-9" />
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="secondary" size="sm" onClick={() => setIsCreating(false)}>Cancel</Button>
-              <Button size="sm" onClick={handleCreate}>Create</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setIsCreating(false)}>Cancel</Button>
+            <Button onClick={handleCreate}>Create</Button>
+          </div>
+        </div>
+      </ResponsiveModal>
 
       {/* Rules List */}
       {isLoading ? (

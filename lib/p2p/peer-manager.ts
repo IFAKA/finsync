@@ -11,12 +11,31 @@ import {
 import { localDB, getDeviceId } from "@/lib/db/local-db";
 
 // ICE servers for NAT traversal (needed for cross-network connections)
+// STUN servers help discover public IP, TURN servers relay when direct P2P fails
 const ICE_SERVERS: RTCIceServer[] = [
+  // Google STUN servers (free, reliable)
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
-  { urls: "stun:stun2.l.google.com:19302" },
-  { urls: "stun:stun3.l.google.com:19302" },
-  { urls: "stun:stun4.l.google.com:19302" },
+  // Open Relay Project - free TURN servers (community-provided, no SLA)
+  // These significantly improve connection success behind symmetric NATs/firewalls
+  {
+    urls: "stun:openrelay.metered.ca:80",
+  },
+  {
+    urls: "turn:openrelay.metered.ca:80",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+  {
+    urls: "turn:openrelay.metered.ca:443",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+  {
+    urls: "turn:openrelay.metered.ca:443?transport=tcp",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
 ];
 
 const PEER_OPTIONS: PeerOptions = {
