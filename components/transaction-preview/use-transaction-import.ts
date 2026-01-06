@@ -252,11 +252,12 @@ export function useTransactionImport({
                 const tx = transactionsToSave[originalIndex];
                 if (tx) {
                   const categoryId = categoryMap.get(result.category);
+                  // Always save merchant (useful regardless of category confidence)
+                  tx.merchant = result.merchant;
+                  tx.categoryConfidence = result.confidence;
                   // Only assign category if confidence is high enough
                   if (categoryId && result.confidence >= 0.7) {
                     tx.categoryId = categoryId;
-                    tx.categoryConfidence = result.confidence;
-                    tx.merchant = result.merchant;
                   }
                 }
               }
