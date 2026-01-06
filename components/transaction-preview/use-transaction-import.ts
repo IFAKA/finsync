@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useTransactionMutations, useCategories, useRules } from "@/lib/hooks/db";
 import { generateId, localDB } from "@/lib/db";
@@ -51,6 +51,9 @@ export function useTransactionImport({
   const { data: categories } = useCategories();
   const { data: rules } = useRules();
 
+  // Ref-based guard to prevent multiple simultaneous imports
+  const importingRef = useRef(false);
+
   // Check for duplicates when component mounts
   useEffect(() => {
     const checkDuplicates = async () => {
@@ -63,6 +66,7 @@ export function useTransactionImport({
             description: t.description,
           }))
         );
+        console.log(`[Import] Duplicate check: ${duplicates.size} duplicates found out of ${transactions.length} transactions`);
         setDuplicateIndices(duplicates);
       } catch (error) {
         console.error("Failed to check duplicates:", error);
@@ -95,13 +99,23 @@ export function useTransactionImport({
   const duplicateCount = duplicateIndices.size;
 
   const handleImport = useCallback(async () => {
+    // Synchronous guard to prevent multiple imports
+    if (importingRef.current) {
+      console.log("[Import] Already importing, ignoring duplicate call");
+      return;
+    }
+    importingRef.current = true;
+
     if (uniqueTransactions.length === 0) {
       toast.error("No new transactions to import - all are duplicates");
+      importingRef.current = false;
       return;
     }
 
     setIsImporting(true);
     const batchId = generateId();
+    console.log(`[Import] Starting import of ${uniqueTransactions.length} transactions (batch: ${batchId})`);
+    console.log(`[Import] First 3 tx: ${uniqueTransactions.slice(0, 3).map(t => `${t.date}|${t.amount}|${t.description.substring(0,20)}`).join(' | ')}`);
 
     try {
       // Prepare transactions in memory
@@ -281,6 +295,8 @@ export function useTransactionImport({
       playSound("error");
       setIsImporting(false);
       setIsCategorizing(false);
+    } finally {
+      importingRef.current = false;
     }
   }, [uniqueTransactions, filename, bankName, categories, rules, modelReady, bulkCreate, onImportComplete]);
 
