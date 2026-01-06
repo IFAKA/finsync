@@ -82,58 +82,57 @@ export function MobileTransactionFilters({
         />
       </div>
 
-      {/* Filters row */}
-      <div className="flex gap-2">
-        <Select value={selectedCategory} onValueChange={onCategoryChange}>
-          <SelectTrigger className="h-9 flex-1 min-w-0">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: cat.color }}
-                  />
-                  <span className="truncate">{cat.name}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Filters */}
+      <Select value={selectedCategory} onValueChange={onCategoryChange}>
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder="Category" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Categories</SelectItem>
+          {categories.map((cat) => (
+            <SelectItem key={cat.id} value={cat.id}>
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: cat.color }}
+                />
+                <span className="truncate">{cat.name}</span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-        <Select value={selectedMonth || "all"} onValueChange={onMonthChange}>
-          <SelectTrigger className="h-9 w-[100px] shrink-0">
-            <SelectValue placeholder="Month" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Time</SelectItem>
-            {availableMonths.map((month) => (
-              <SelectItem key={month} value={month}>
-                {formatMonthLabel(month)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <Select value={selectedMonth || "all"} onValueChange={onMonthChange}>
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder="Month" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Time</SelectItem>
+          {availableMonths.map((month) => (
+            <SelectItem key={month} value={month}>
+              {formatMonthLabel(month)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-        <Select value={sortBy} onValueChange={(v) => onSortChange(v as "date" | "amount")}>
-          <SelectTrigger className="h-9 w-[90px] shrink-0">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="date">Newest</SelectItem>
-            <SelectItem value="amount">Expensive</SelectItem>
-          </SelectContent>
-        </Select>
+      <Select value={sortBy} onValueChange={(v) => onSortChange(v as "date" | "amount")}>
+        <SelectTrigger className="h-9">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="date">Newest</SelectItem>
+          <SelectItem value="amount">Expensive</SelectItem>
+        </SelectContent>
+      </Select>
 
-        {hasFilters && (
-          <Button variant="ghost" size="icon" onClick={onClearFilters} className="h-9 w-9 shrink-0">
-            <X className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
+      {hasFilters && (
+        <Button variant="ghost" size="sm" onClick={onClearFilters} className="w-full">
+          <X className="w-4 h-4 mr-2" />
+          Clear Filters
+        </Button>
+      )}
     </div>
   );
 }
