@@ -92,9 +92,9 @@ export default function RulesPage() {
   };
 
   const getCategoryInfo = (categoryId?: string) => {
-    if (!categoryId) return { name: "Unknown", color: "#888" };
+    if (!categoryId) return null;
     const category = categories.find((c) => c.id === categoryId);
-    return category ? { name: category.name, color: category.color } : { name: "Unknown", color: "#888" };
+    return category ? { name: category.name, color: category.color } : null;
   };
 
   return (
@@ -242,12 +242,19 @@ export default function RulesPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium text-sm">{rule.name}</span>
-                          <span
-                            className="text-xs px-1.5 py-0.5 rounded-full"
-                            style={{ backgroundColor: categoryInfo.color + "20", color: categoryInfo.color }}
-                          >
-                            {categoryInfo.name}
-                          </span>
+                          {categoryInfo && (
+                            <span
+                              className="text-xs px-1.5 py-0.5 rounded-full"
+                              style={{ backgroundColor: categoryInfo.color + "20", color: categoryInfo.color }}
+                            >
+                              {categoryInfo.name}
+                            </span>
+                          )}
+                          {rule.displayName && (
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                              → {rule.displayName}
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
                           {rule.amountEquals != null && <span>= {formatCurrency(rule.amountEquals)}</span>}
@@ -273,12 +280,19 @@ export default function RulesPage() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{rule.name}</span>
-                            <span
-                              className="text-xs px-2 py-0.5 rounded-full"
-                              style={{ backgroundColor: categoryInfo.color + "20", color: categoryInfo.color }}
-                            >
-                              {categoryInfo.name}
-                            </span>
+                            {categoryInfo && (
+                              <span
+                                className="text-xs px-2 py-0.5 rounded-full"
+                                style={{ backgroundColor: categoryInfo.color + "20", color: categoryInfo.color }}
+                              >
+                                {categoryInfo.name}
+                              </span>
+                            )}
+                            {rule.displayName && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                Shows as: "{rule.displayName}"
+                              </span>
+                            )}
                           </div>
                           <div className="text-sm text-muted-foreground mt-1 space-x-3">
                             {rule.amountEquals != null && <span>Amount = {formatCurrency(rule.amountEquals)}</span>}

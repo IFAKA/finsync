@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronRight, Pencil } from "lucide-react";
 import {
   ResponsiveModal,
   ResponsiveModalHeader,
@@ -16,7 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { LocalCategory, LocalTransaction } from "@/lib/hooks/db";
+import { getDisplayName } from "@/lib/utils/display-name";
+import type { LocalCategory, LocalTransaction, LocalRule } from "@/lib/hooks/db";
+import { CreateAliasModal } from "./create-alias-modal";
 
 interface SimilarTransactionsInfo {
   transactionId: string;
@@ -28,10 +31,20 @@ interface TransactionDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   transaction: LocalTransaction | null;
   categories?: LocalCategory[];
+  rules?: LocalRule[];
   onCategoryChange?: (transaction: LocalTransaction, categoryId: string) => void;
   similarTransactionsInfo?: SimilarTransactionsInfo | null;
   onCreateRule?: () => void;
   onDismissSimilar?: () => void;
+  onCreateAlias?: (
+    criteria: {
+      name: string;
+      displayName: string;
+      descriptionContains: string;
+      categoryId?: string;
+    },
+    matchingTransactionIds: string[]
+  ) => void;
 }
 
 export function TransactionDetailDialog({
@@ -39,17 +52,24 @@ export function TransactionDetailDialog({
   onOpenChange,
   transaction,
   categories = [],
+  rules = [],
   onCategoryChange,
   similarTransactionsInfo,
   onCreateRule,
   onDismissSimilar,
+  onCreateAlias,
 }: TransactionDetailDialogProps) {
+  const [showAliasModal, setShowAliasModal] = useState(false);
+
   if (!transaction) return null;
 
   const currentCategory = categories.find((c) => c.id === transaction.categoryId);
   const showSimilarPrompt = similarTransactionsInfo?.transactionId === transaction.id;
+  const displayName = getDisplayName(transaction, rules);
+  const hasAlias = displayName !== transaction.description;
 
   return (
+    <>
     <ResponsiveModal open={open} onOpenChange={onOpenChange} className="max-w-md">
       <ResponsiveModalHeader>
         <ResponsiveModalTitle>Transaction Details</ResponsiveModalTitle>
@@ -163,7 +183,25 @@ export function TransactionDetailDialog({
         {/* Description */}
         <div className="space-y-1.5">
           <label className="text-xs text-muted-foreground">Description</label>
-          <p className="text-sm">{transaction.description}</p>
+          <div className="flex items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm">{displayName}</p>
+              {hasAlias && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Original: {transaction.description}
+                </p>
+              )}
+            </div>
+            {onCreateAlias && (
+              <button
+                onClick={() => setShowAliasModal(true)}
+                className="p-1.5 -mr-1.5 rounded-md hover:bg-muted transition-colors shrink-0"
+                title="Rename this transaction"
+              >
+                <Pencil className="w-4 h-4 text-muted-foreground" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Additional Details */}
@@ -199,5 +237,19 @@ export function TransactionDetailDialog({
         </div>
       </ResponsiveModalBody>
     </ResponsiveModal>
+
+      {/* Alias Modal */}
+      {onCreateAlias && (
+        <CreateAliasModal
+          open={showAliasModal}
+          onOpenChange={setShowAliasModal}
+          transaction={transaction}
+          onSave={(criteria, matchingIds) => {
+            onCreateAlias(criteria, matchingIds);
+            setShowAliasModal(false);
+          }}
+        />
+      )}
+    </>
   );
 }

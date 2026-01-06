@@ -178,16 +178,19 @@ export function useTransactionImport({
 
           if (unmatchedForRules.length > 0) {
             setStatus("Applying user rules…");
-            const rulesForMatching: Rule[] = rules.map((r) => ({
-              id: r.id,
-              categoryId: r.categoryId,
-              descriptionContains: r.descriptionContains,
-              amountEquals: r.amountEquals,
-              amountMin: r.amountMin,
-              amountMax: r.amountMax,
-              isEnabled: r.isEnabled,
-              priority: r.priority,
-            }));
+            // Only include rules with categoryId (filter out display-name-only rules)
+            const rulesForMatching: Rule[] = rules
+              .filter((r) => r.categoryId)
+              .map((r) => ({
+                id: r.id,
+                categoryId: r.categoryId!,
+                descriptionContains: r.descriptionContains,
+                amountEquals: r.amountEquals,
+                amountMin: r.amountMin,
+                amountMax: r.amountMax,
+                isEnabled: r.isEnabled,
+                priority: r.priority,
+              }));
 
             const { matches: ruleMatches } = applyRules(
               unmatchedForRules.map((t) => ({

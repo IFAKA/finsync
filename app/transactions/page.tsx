@@ -8,6 +8,7 @@ import {
   useTransactions,
   useCategories,
   useAvailableMonths,
+  useRules,
   type LocalTransaction,
 } from "@/lib/hooks/db";
 import { TransactionDetailDialog } from "@/components/transaction-detail-dialog";
@@ -53,6 +54,7 @@ function TransactionsContent() {
   // Fetch data
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: availableMonths, isLoading: monthsLoading } = useAvailableMonths();
+  const { data: rules } = useRules();
 
   // Initialize filters with URL params
   const initialCategory = searchParams.get("category") || "all";
@@ -140,6 +142,7 @@ function TransactionsContent() {
       <TransactionList
         transactions={filters.paginatedTransactions}
         categories={categories}
+        rules={rules}
         isLoading={isLoading}
         hasFilters={filters.hasFilters}
         page={filters.page}
@@ -175,6 +178,7 @@ function TransactionsContent() {
         onOpenChange={(open) => !open && setSelectedTransaction(null)}
         transaction={selectedTransaction}
         categories={categories}
+        rules={rules}
         onCategoryChange={(t, categoryId) => {
           similarFlow.handleCategoryChange(t, categoryId);
           // Update the selected transaction state to reflect the change
@@ -192,6 +196,7 @@ function TransactionsContent() {
         }
         onCreateRule={similarFlow.handlePillClick}
         onDismissSimilar={similarFlow.handlePillDismiss}
+        onCreateAlias={similarFlow.handleCreateAlias}
       />
     </div>
   );

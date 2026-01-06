@@ -53,11 +53,12 @@ export interface LocalRule {
   id: string; // UUID for sync
   serverId?: number;
   name: string;
-  categoryId: string;
+  categoryId?: string; // Optional: rules can set only displayName without category
   amountEquals?: number;
   amountMin?: number;
   amountMax?: number;
   descriptionContains?: string;
+  displayName?: string; // If set, matching transactions display this name
   priority: number;
   isEnabled: boolean;
   createdAt: Date;

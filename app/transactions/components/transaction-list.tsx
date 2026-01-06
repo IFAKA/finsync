@@ -12,11 +12,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { LocalCategory, LocalTransaction } from "@/lib/hooks/db";
+import { getDisplayName } from "@/lib/utils/display-name";
+import type { LocalCategory, LocalTransaction, LocalRule } from "@/lib/hooks/db";
 
 interface TransactionListProps {
   transactions: LocalTransaction[];
   categories: LocalCategory[];
+  rules: LocalRule[];
   isLoading: boolean;
   hasFilters: boolean;
   page: number;
@@ -29,6 +31,7 @@ interface TransactionListProps {
 export function TransactionList({
   transactions,
   categories,
+  rules,
   isLoading,
   hasFilters,
   page,
@@ -88,7 +91,7 @@ export function TransactionList({
                           style={{ backgroundColor: categoryInfo.color }}
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm truncate">{t.description}</p>
+                          <p className="text-sm truncate">{getDisplayName(t, rules)}</p>
                           <p className="text-xs text-muted-foreground md:hidden">
                             {formatDate(t.date)}
                           </p>

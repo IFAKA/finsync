@@ -151,11 +151,77 @@ export function useSimilarTransactionFlow() {
     }
   }, []);
 
+  const handleCreateAlias = useCallback(
+    async (
+      criteria: {
+        name: string;
+        displayName: string;
+        descriptionContains: string;
+        categoryId?: string;
+      },
+      matchingTransactionIds: string[]
+    ) => {
+      try {
+        // If category is specified, also update transactions
+        let previousStates: { id: string; previousCategoryId?: string }[] = [];
+        if (criteria.categoryId) {
+          previousStates = await bulkUpdate(matchingTransactionIds, {
+            categoryId: criteria.categoryId,
+          });
+        }
+
+        // Create the alias rule
+        const rule = await createRule({
+          name: criteria.name,
+          displayName: criteria.displayName,
+          descriptionContains: criteria.descriptionContains,
+          categoryId: criteria.categoryId,
+          priority: 0,
+          isEnabled: true,
+        });
+
+        playSound("complete");
+
+        // Show undo toast
+        const message = criteria.categoryId
+          ? `Alias saved · ${matchingTransactionIds.length} renamed & categorized`
+          : `Alias saved · ${matchingTransactionIds.length} renamed`;
+
+        toast.success(message, {
+          action: {
+            label: "Undo",
+            onClick: async () => {
+              try {
+                // Revert transactions if category was changed
+                if (criteria.categoryId && previousStates.length > 0) {
+                  await revertBulkUpdate(previousStates);
+                }
+                // Delete the rule
+                await deleteRule(rule.id);
+                toast.success("Alias removed");
+                playSound("toggle");
+              } catch {
+                toast.error("Failed to undo");
+                playSound("error");
+              }
+            },
+          },
+          duration: 10000,
+        });
+      } catch {
+        toast.error("Failed to save alias");
+        playSound("error");
+      }
+    },
+    [bulkUpdate, createRule, revertBulkUpdate, deleteRule]
+  );
+
   return {
     recentlyCategorized,
     showCreateRuleModal,
     handleCategoryChange,
     handleCreateRuleSave,
+    handleCreateAlias,
     handlePillClick,
     handlePillDismiss,
     handleModalClose,
