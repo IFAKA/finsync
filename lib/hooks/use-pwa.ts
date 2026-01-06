@@ -74,12 +74,12 @@ export function usePWA(): UsePWAReturn {
     };
     window.addEventListener("appinstalled", handleAppInstalled);
 
-    // Register service worker
-    if ("serviceWorker" in navigator) {
+    // Register service worker (skip in development to avoid caching issues)
+    const isDev = process.env.NODE_ENV === "development";
+    if ("serviceWorker" in navigator && !isDev) {
       navigator.serviceWorker
         .register("/sw.js")
         .then((registration) => {
-          console.log("Service Worker registered:", registration.scope);
           registrationRef.current = registration;
           setIsServiceWorkerActive(!!registration.active);
 
@@ -99,7 +99,6 @@ export function usePWA(): UsePWAReturn {
                 newWorker.state === "installed" &&
                 navigator.serviceWorker.controller
               ) {
-                console.log("New version available");
                 setUpdateAvailable(true);
               }
             });
@@ -120,6 +119,11 @@ export function usePWA(): UsePWAReturn {
         if (refreshing) return;
         refreshing = true;
         window.location.reload();
+      });
+    } else if (isDev && "serviceWorker" in navigator) {
+      // Unregister any existing service worker in development
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => registration.unregister());
       });
     }
 

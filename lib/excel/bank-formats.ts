@@ -74,7 +74,6 @@ export function detectBankFormat(
   for (const format of SPANISH_BANK_FORMATS) {
     for (const pattern of format.filenamePatterns) {
       if (pattern.test(lowerFilename)) {
-        console.log("Bank format detected by filename:", format.name);
         return format;
       }
     }
@@ -94,12 +93,10 @@ export function detectBankFormat(
       const hasDisponible = headers.includes("disponible");
 
       if (hasFValor && hasConcepto && hasImporte && hasDisponible) {
-        console.log("Bank format detected by content: BBVA");
         return bbvaFormat;
       }
     }
   }
 
-  console.log("No bank format detected, using auto-detection");
   return null;
 }

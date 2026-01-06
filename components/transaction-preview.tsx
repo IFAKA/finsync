@@ -133,10 +133,6 @@ export function TransactionPreview({
       });
 
       // Step 1: Categorize (rules first, then AI for remaining)
-      console.log("[Import] Categories available:", categories.length, categories.map(c => c.name));
-      console.log("[Import] Rules available:", rules.length);
-      console.log("[Import] Transactions to categorize:", transactionsToSave.length);
-
       if (categories.length > 0) {
         setIsCategorizing(true);
         const categoryNames = categories.map((c) => c.name);
@@ -167,9 +163,6 @@ export function TransactionPreview({
             })),
             rulesForMatching
           );
-
-          console.log("[Import] Rule matches:", ruleMatches.length);
-          console.log("[Import] Unmatched for AI:", unmatchedIndices.length);
 
           // Apply rule matches
           for (const match of ruleMatches) {
@@ -215,8 +208,6 @@ export function TransactionPreview({
                 ([category, examples]) => ({ category, examples })
               );
 
-              console.log("[Import] Built examples for", categoryExamples.length, "categories");
-
               // Only categorize unmatched transactions
               const unmatchedTxs = unmatchedIndices.map((i) => ({
                 description: transactionsToSave[i].rawDescription,
@@ -239,7 +230,6 @@ export function TransactionPreview({
               );
 
               // Apply AI categories (using originalIndex to map back)
-              console.log("[Import] AI returned", results.length, "categorization results");
               for (const result of results) {
                 const originalIndex = unmatchedTxs[result.index - 1]?.originalIndex;
                 if (originalIndex !== undefined) {
@@ -332,7 +322,6 @@ export function TransactionPreview({
           }
         }
 
-        console.log("[Import] Final: Rules matched", ruleMatchCount, ", AI matched", aiMatchCount);
         setIsCategorizing(false);
       }
 

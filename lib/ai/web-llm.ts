@@ -196,16 +196,11 @@ export async function categorizeTransactionsWithWebLLM(
   onProgress?: LoadingCallback,
   categoryExamples?: CategoryExample[]
 ): Promise<CategorizationResult[]> {
-  console.log("[WebLLM] categorizeTransactionsWithWebLLM called with", transactions.length, "transactions");
-  console.log("[WebLLM] Categories:", categories);
-  console.log("[WebLLM] Examples provided:", categoryExamples?.length || 0);
-
   if (transactions.length === 0) {
     return [];
   }
 
   await initWebLLM(onProgress);
-  console.log("[WebLLM] Model initialized");
 
   // Build examples section if we have past categorizations
   let examplesSection = "";
@@ -231,7 +226,6 @@ Respond with JSON array only, no explanation.`;
 
   const allResults: CategorizationResult[] = [];
   const totalBatches = Math.ceil(transactions.length / BATCH_SIZE);
-  console.log("[WebLLM] Will process", totalBatches, "batches");
 
   for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
     const start = batchIndex * BATCH_SIZE;
@@ -261,9 +255,7 @@ Output format: [{"index":1,"category":"CategoryName","confidence":0.9,"merchant"
 
     try {
       const response = await generateCompletion(prompt, systemPrompt);
-      console.log(`[WebLLM] Batch ${batchIndex + 1} response:`, response);
       const results = parseCategorizationResponse(response, categories);
-      console.log(`[WebLLM] Batch ${batchIndex + 1} parsed:`, results);
       allResults.push(...results);
     } catch (error) {
       console.error(`[WebLLM] Batch ${batchIndex + 1} failed:`, error);
@@ -363,16 +355,13 @@ function parseCategorizationResponse(
     }
 
     let jsonStr = response.slice(startIdx, endIdx + 1);
-    console.log("[WebLLM Parse] Extracted JSON:", jsonStr);
 
     // Try parsing as-is first, then sanitized
     let parsed;
     try {
       parsed = JSON.parse(jsonStr);
     } catch {
-      console.log("[WebLLM Parse] Initial parse failed, attempting sanitization");
       jsonStr = sanitizeJson(jsonStr);
-      console.log("[WebLLM Parse] Sanitized JSON:", jsonStr);
       parsed = JSON.parse(jsonStr);
     }
 
