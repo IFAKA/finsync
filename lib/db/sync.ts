@@ -118,10 +118,112 @@ export async function mergeChanges(data: {
   }
 
   if (data.transactions) {
+    // Build a map of remote category IDs to local category IDs (by name)
+    const categoryIdMap = new Map<string, string>();
+    if (data.categories) {
+      for (const incomingCat of data.categories) {
+        // Find the local category with the same name
+        const localCat = await db.categories
+          .filter((c) => c.name === incomingCat.name && !c._deleted)
+          .first();
+        if (localCat && localCat.id !== incomingCat.id) {
+          // Map remote category ID to local category ID
+          categoryIdMap.set(incomingCat.id, localCat.id);
+        }
+      }
+    }
+
+    // Build a map of existing transactions for content-based duplicate detection
+    // Key: date|amount, Value: array of transactions with that date+amount
+    const existingTxMap = new Map<string, LocalTransaction[]>();
+    const allExisting = await db.transactions.filter((t) => !t._deleted).toArray();
+    for (const tx of allExisting) {
+      const dateStr = tx.date.toISOString().split("T")[0];
+      const key = `${dateStr}|${tx.amount}`;
+      const list = existingTxMap.get(key) || [];
+      list.push(tx);
+      existingTxMap.set(key, list);
+    }
+
     for (const incoming of data.transactions) {
-      const existing = await db.transactions.get(incoming.id);
-      if (!existing || incoming._lastModified > existing._lastModified) {
+      // First check by ID (exact match)
+      const existingById = await db.transactions.get(incoming.id);
+      if (existingById) {
+        // Same ID - use last-write-wins
+        if (incoming._lastModified > existingById._lastModified) {
+          // Remap categoryId if needed
+          if (incoming.categoryId) {
+            if (categoryIdMap.has(incoming.categoryId)) {
+              incoming.categoryId = categoryIdMap.get(incoming.categoryId)!;
+            } else {
+              const localCategory = await db.categories.get(incoming.categoryId);
+              if (!localCategory || localCategory._deleted) {
+                incoming.categoryId = undefined;
+                incoming.categoryConfidence = undefined;
+              }
+            }
+          }
+          await db.transactions.put(incoming);
+        }
+        continue;
+      }
+
+      // No ID match - check for content-based duplicate (same date, amount, similar description)
+      const dateStr = incoming.date.toISOString().split("T")[0];
+      const key = `${dateStr}|${incoming.amount}`;
+      const potentialDupes = existingTxMap.get(key) || [];
+
+      let isDuplicate = false;
+      const normalizedDesc = incoming.description.toLowerCase().trim().replace(/\s+/g, " ");
+
+      for (const existing of potentialDupes) {
+        const existingDesc = existing.description.toLowerCase().trim().replace(/\s+/g, " ");
+        // Consider duplicate if descriptions match or one contains the other
+        if (
+          normalizedDesc === existingDesc ||
+          normalizedDesc.includes(existingDesc) ||
+          existingDesc.includes(normalizedDesc)
+        ) {
+          isDuplicate = true;
+          // If the incoming has a category and local doesn't, update the local one
+          if (incoming.categoryId && !existing.categoryId) {
+            let mappedCategoryId = incoming.categoryId;
+            if (categoryIdMap.has(incoming.categoryId)) {
+              mappedCategoryId = categoryIdMap.get(incoming.categoryId)!;
+            }
+            // Verify the category exists
+            const localCategory = await db.categories.get(mappedCategoryId);
+            if (localCategory && !localCategory._deleted) {
+              await db.transactions.update(existing.id, {
+                categoryId: mappedCategoryId,
+                categoryConfidence: incoming.categoryConfidence,
+                _lastModified: new Date(),
+              });
+            }
+          }
+          break;
+        }
+      }
+
+      if (!isDuplicate) {
+        // Not a duplicate - add the transaction
+        // Remap categoryId if needed
+        if (incoming.categoryId) {
+          if (categoryIdMap.has(incoming.categoryId)) {
+            incoming.categoryId = categoryIdMap.get(incoming.categoryId)!;
+          } else {
+            const localCategory = await db.categories.get(incoming.categoryId);
+            if (!localCategory || localCategory._deleted) {
+              incoming.categoryId = undefined;
+              incoming.categoryConfidence = undefined;
+            }
+          }
+        }
         await db.transactions.put(incoming);
+        // Add to map for subsequent duplicate checks within this sync batch
+        const list = existingTxMap.get(key) || [];
+        list.push(incoming);
+        existingTxMap.set(key, list);
       }
     }
   }
