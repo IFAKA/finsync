@@ -185,14 +185,14 @@ export function CreateAliasModal({
       <div className="space-y-2">
         <label htmlFor="category" className="text-sm font-medium">Also set category (optional)</label>
         <Select
-          value={criteria.categoryId}
-          onValueChange={(value) => updateCriteria({ categoryId: value })}
+          value={criteria.categoryId || "__KEEP_CURRENT__"}
+          onValueChange={(value) => updateCriteria({ categoryId: value === "__KEEP_CURRENT__" ? "" : value })}
         >
           <SelectTrigger id="category">
             <SelectValue placeholder="Keep current category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Keep current category</SelectItem>
+            <SelectItem value="__KEEP_CURRENT__">Keep current category</SelectItem>
             {categories.map((cat: LocalCategory) => (
               <SelectItem key={cat.id} value={cat.id}>
                 <div className="flex items-center gap-2">
