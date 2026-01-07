@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { playSound } from "@/lib/sounds";
+import { formatMonth } from "@/lib/utils";
 
 interface MonthNavigatorProps {
   selectedMonth: string | null;
@@ -10,14 +11,6 @@ interface MonthNavigatorProps {
   onNavigate: (month: string) => void;
   variant?: "mobile" | "desktop";
   className?: string;
-}
-
-export function formatMonth(monthStr: string, style: "long" | "short" = "long"): string {
-  const [year, month] = monthStr.split("-").map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString("en-US", {
-    month: style === "long" ? "long" : "short",
-    year: style === "long" ? "2-digit" : "numeric",
-  });
 }
 
 export function useMonthNavigation(
@@ -84,7 +77,7 @@ export function MonthNavigator({
           exit={{ opacity: 0, y: 8 }}
           className={`${textSize} font-semibold ${minWidth} text-center`}
         >
-          {selectedMonth ? formatMonth(selectedMonth) : "—"}
+          {selectedMonth ? formatMonth(selectedMonth, { year: "2-digit" }) : "—"}
         </motion.span>
       </AnimatePresence>
       <motion.button

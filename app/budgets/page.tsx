@@ -16,7 +16,7 @@ import {
   useMonthlySummary,
   useBudgetMutations,
 } from "@/lib/hooks/db";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatMonth } from "@/lib/utils";
 import { playSound } from "@/lib/sounds";
 
 export default function BudgetsPage() {
@@ -63,13 +63,6 @@ export default function BudgetsPage() {
     setSelectedMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`);
   };
 
-  const formatMonth = (monthStr: string) => {
-    const [year, month] = monthStr.split("-").map(Number);
-    return new Date(year, month - 1, 1).toLocaleDateString("en-US", {
-      month: "long",
-      year: "numeric",
-    });
-  };
 
   const handleEdit = (categoryId: string, currentLimit: number | null) => {
     setEditingCategory(categoryId);

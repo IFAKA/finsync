@@ -5,7 +5,7 @@ import type { HTMLAttributes } from "react";
 import { forwardRef, useImperativeHandle, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
-export interface RefreshCcwIconHandle {
+interface RefreshCcwIconHandle {
   startAnimation: () => void;
   stopAnimation: () => void;
 }

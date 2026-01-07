@@ -16,7 +16,7 @@ import {
   type Rule,
 } from "@/lib/ai/web-llm";
 
-export interface ParsedTransaction {
+export interface ImportTransaction {
   date: string;
   description: string;
   amount: number;
@@ -28,7 +28,7 @@ export interface ParsedTransaction {
 interface UseTransactionImportOptions {
   filename: string;
   bankName: string | null;
-  transactions: ParsedTransaction[];
+  transactions: ImportTransaction[];
   onImportComplete: () => void;
 }
 

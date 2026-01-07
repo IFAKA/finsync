@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import {
   useTransactionImport,
   PreviewTable,
-  type ParsedTransaction,
+  type ImportTransaction,
 } from "./transaction-preview/index";
 
 interface TransactionPreviewProps {
   filename: string;
   bankName: string | null;
-  transactions: ParsedTransaction[];
+  transactions: ImportTransaction[];
   onBack: () => void;
   onImportComplete: () => void;
 }

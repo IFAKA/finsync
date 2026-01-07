@@ -25,8 +25,8 @@ import {
   MotionButton,
   FadeIn,
   StaggerItem,
-  playSound,
 } from "@/components/motion";
+import { playSound } from "@/lib/sounds";
 import { MonthNavigator } from "@/components/month-navigator";
 import type { LocalCategory, LocalTransaction } from "@/lib/hooks/db";
 import { getCategoryInfo } from "./use-dashboard-data";

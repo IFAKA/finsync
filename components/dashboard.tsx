@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import { useTransactionMutations } from "@/lib/hooks/db";
-import { playSound } from "@/components/motion";
+import { playSound } from "@/lib/sounds";
 import {
   BentoMobileDashboard,
   DesktopDashboard,

@@ -1,10 +1,10 @@
 "use client";
 
 import { formatCurrency } from "@/lib/utils";
-import type { ParsedTransaction } from "./use-transaction-import";
+import type { ImportTransaction } from "./use-transaction-import";
 
 interface PreviewTableProps {
-  transactions: ParsedTransaction[];
+  transactions: ImportTransaction[];
   maxRows?: number;
 }
 

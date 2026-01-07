@@ -12,4 +12,3 @@ export { MotionButton, buttonVariants as motionButtonVariants } from "./motion-b
 
 // Re-export motion configuration
 export { easing, transitions } from "@/lib/motion";
-export { playSound } from "@/lib/sounds";

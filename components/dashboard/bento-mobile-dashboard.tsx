@@ -12,9 +12,9 @@ import {
   PiggyBank,
   Target,
 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatMonth } from "@/lib/utils";
 import { AnimatedNumber } from "@/components/motion";
-import { MonthNavigator, formatMonth } from "@/components/month-navigator";
+import { MonthNavigator } from "@/components/month-navigator";
 import type { LocalCategory } from "@/lib/hooks/db";
 import type { BudgetItem } from "./use-dashboard-data";
 

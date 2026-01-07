@@ -45,3 +45,12 @@ export function hashDescription(description: string): string {
   }
   return hash.toString(36);
 }
+
+export function formatMonth(
+  monthStr: string,
+  options?: { month?: "long" | "short"; year?: "numeric" | "2-digit" }
+): string {
+  const { month = "long", year = "numeric" } = options ?? {};
+  const [y, m] = monthStr.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month, year });
+}

@@ -6,10 +6,10 @@ import { ChevronRight, ChevronLeft, Upload, Tags, PiggyBank, Sparkles, RefreshCw
 import {
   MotionButton,
   FadeIn,
-  playSound,
   transitions,
   easing,
 } from "@/components/motion";
+import { playSound } from "@/lib/sounds";
 import { useMediaQuery } from "@/lib/hooks/use-media-query";
 
 interface OnboardingProps {

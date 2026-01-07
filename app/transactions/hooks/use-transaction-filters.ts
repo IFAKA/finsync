@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { LocalTransaction } from "@/lib/hooks/db";
+import { formatMonth } from "@/lib/utils";
 
 const PAGE_SIZE = 25;
 
@@ -254,9 +255,5 @@ export function useTransactionFilters({
 }
 
 export function formatMonthLabel(monthStr: string): string {
-  const [year, month] = monthStr.split("-").map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString("en-US", {
-    month: "short",
-    year: "numeric",
-  });
+  return formatMonth(monthStr, { month: "short" });
 }
