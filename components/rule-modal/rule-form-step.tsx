@@ -74,66 +74,106 @@ export function RuleFormStep({
       <div className="border-t pt-4">
         <p className="text-sm font-medium mb-3">Conditions (at least one)</p>
         <div className="space-y-3">
-          <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
-            {([
-              { value: "expense", label: "Expense" },
-              { value: "income", label: "Income" },
-              { value: "absolute", label: "Both" },
-            ] as const).map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => onCriteriaChange({ amountMatchType: opt.value as AmountMatchType })}
-                className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  criteria.amountMatchType === opt.value
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          {/* Description contains */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Description Contains</label>
+            <Input
+              placeholder="ALQUILER"
+              value={criteria.descriptionContains}
+              onChange={(e) => onCriteriaChange({ descriptionContains: e.target.value })}
+            />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Exact Amount</label>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="395"
-                value={criteria.amountEquals}
-                onChange={(e) => onCriteriaChange({ amountEquals: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Contains</label>
-              <Input
-                placeholder="ALQUILER"
-                value={criteria.descriptionContains}
-                onChange={(e) => onCriteriaChange({ descriptionContains: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Min</label>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="300"
-                value={criteria.amountMin}
-                onChange={(e) => onCriteriaChange({ amountMin: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Max</label>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="500"
-                value={criteria.amountMax}
-                onChange={(e) => onCriteriaChange({ amountMax: e.target.value })}
-              />
+
+          {/* Amount mode toggle */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Amount Condition</label>
+            <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+              {([
+                { value: "none", label: "None" },
+                { value: "exact", label: "Exact" },
+                { value: "range", label: "Range" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onCriteriaChange({
+                    amountMode: opt.value,
+                    ...(opt.value === 'none' ? { amountEquals: "", amountMin: "", amountMax: "" } : {}),
+                    ...(opt.value === 'exact' ? { amountMin: "", amountMax: "" } : {}),
+                    ...(opt.value === 'range' ? { amountEquals: "" } : {}),
+                  })}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    criteria.amountMode === opt.value
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
+
+          {/* Expense/Income/Both toggle - only show when amount mode is not 'none' */}
+          {criteria.amountMode !== 'none' && (
+            <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+              {([
+                { value: "expense", label: "Expense" },
+                { value: "income", label: "Income" },
+                { value: "absolute", label: "Both" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onCriteriaChange({ amountMatchType: opt.value as AmountMatchType })}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    criteria.amountMatchType === opt.value
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Exact amount input */}
+          {criteria.amountMode === 'exact' && (
+            <Input
+              type="number"
+              step="0.01"
+              placeholder="Exact amount (e.g., 395)"
+              value={criteria.amountEquals}
+              onChange={(e) => onCriteriaChange({ amountEquals: e.target.value })}
+            />
+          )}
+
+          {/* Range inputs */}
+          {criteria.amountMode === 'range' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Min</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="300"
+                  value={criteria.amountMin}
+                  onChange={(e) => onCriteriaChange({ amountMin: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Max</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="500"
+                  value={criteria.amountMax}
+                  onChange={(e) => onCriteriaChange({ amountMax: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

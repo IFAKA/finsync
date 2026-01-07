@@ -5,11 +5,14 @@ import type { LocalTransaction } from "@/lib/hooks/db";
 import { useFindSimilarTransactions } from "@/lib/hooks/db";
 import type { AmountMatchType } from "@/lib/db/schema";
 
+type AmountMode = 'none' | 'exact' | 'range';
+
 export interface RuleCriteria {
   name: string;
   categoryId: string;
   displayName: string;
   descriptionContains: string;
+  amountMode: AmountMode;
   amountEquals: string;
   amountMin: string;
   amountMax: string;
@@ -21,6 +24,7 @@ const initialCriteria: RuleCriteria = {
   categoryId: "",
   displayName: "",
   descriptionContains: "",
+  amountMode: "none",
   amountEquals: "",
   amountMin: "",
   amountMax: "",
@@ -54,12 +58,19 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
   // Initialize form when prefill changes
   useEffect(() => {
     if (open && initialRule) {
-      // Editing an existing rule
+      // Editing an existing rule - determine amount mode from values
+      let amountMode: AmountMode = "none";
+      if (initialRule.amountEquals != null) {
+        amountMode = "exact";
+      } else if (initialRule.amountMin != null || initialRule.amountMax != null) {
+        amountMode = "range";
+      }
       setCriteria({
         name: initialRule.name,
         categoryId: initialRule.categoryId || "",
         displayName: initialRule.displayName || "",
         descriptionContains: initialRule.descriptionContains || "",
+        amountMode,
         amountEquals: initialRule.amountEquals?.toString() || "",
         amountMin: initialRule.amountMin?.toString() || "",
         amountMax: initialRule.amountMax?.toString() || "",
@@ -74,6 +85,7 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
         categoryId: prefillCategoryId || "",
         displayName: "",
         descriptionContains: desc,
+        amountMode: "none",
         amountEquals: "",
         amountMin: "",
         amountMax: "",
@@ -102,17 +114,22 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
       if (criteria.descriptionContains) {
         searchCriteria.descriptionContains = criteria.descriptionContains;
       }
-      if (criteria.amountEquals) {
+      if (criteria.amountMode === 'exact' && criteria.amountEquals) {
         searchCriteria.amountEquals = parseFloat(criteria.amountEquals);
       }
-      if (criteria.amountMin) {
-        searchCriteria.amountMin = parseFloat(criteria.amountMin);
-      }
-      if (criteria.amountMax) {
-        searchCriteria.amountMax = parseFloat(criteria.amountMax);
+      if (criteria.amountMode === 'range') {
+        if (criteria.amountMin) {
+          searchCriteria.amountMin = parseFloat(criteria.amountMin);
+        }
+        if (criteria.amountMax) {
+          searchCriteria.amountMax = parseFloat(criteria.amountMax);
+        }
       }
       // Only include amountMatchType if there's an amount condition
-      const hasAmountCondition = criteria.amountEquals || criteria.amountMin || criteria.amountMax;
+      const hasAmountCondition = criteria.amountMode !== 'none' && (
+        (criteria.amountMode === 'exact' && criteria.amountEquals) ||
+        (criteria.amountMode === 'range' && (criteria.amountMin || criteria.amountMax))
+      );
       if (hasAmountCondition) {
         searchCriteria.amountMatchType = criteria.amountMatchType;
       }
@@ -138,9 +155,12 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
     setCriteria((prev) => ({ ...prev, ...updates }));
   }, []);
 
-  const hasConditions = !!(
-    criteria.descriptionContains || criteria.amountEquals || criteria.amountMin || criteria.amountMax
+  const hasAmountCondition = criteria.amountMode !== 'none' && (
+    (criteria.amountMode === 'exact' && criteria.amountEquals) ||
+    (criteria.amountMode === 'range' && (criteria.amountMin || criteria.amountMax))
   );
+
+  const hasConditions = !!(criteria.descriptionContains || hasAmountCondition);
 
   const canProceed =
     criteria.name &&
@@ -172,18 +192,24 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
     if (criteria.descriptionContains) {
       ruleCriteria.descriptionContains = criteria.descriptionContains;
     }
-    if (criteria.amountEquals) {
+    // Only include amount values based on the selected mode
+    if (criteria.amountMode === 'exact' && criteria.amountEquals) {
       ruleCriteria.amountEquals = parseFloat(criteria.amountEquals);
     }
-    if (criteria.amountMin) {
-      ruleCriteria.amountMin = parseFloat(criteria.amountMin);
-    }
-    if (criteria.amountMax) {
-      ruleCriteria.amountMax = parseFloat(criteria.amountMax);
+    if (criteria.amountMode === 'range') {
+      if (criteria.amountMin) {
+        ruleCriteria.amountMin = parseFloat(criteria.amountMin);
+      }
+      if (criteria.amountMax) {
+        ruleCriteria.amountMax = parseFloat(criteria.amountMax);
+      }
     }
     // Only include amountMatchType if there's an amount condition
-    const hasAmountCondition = criteria.amountEquals || criteria.amountMin || criteria.amountMax;
-    if (hasAmountCondition) {
+    const hasAmountCond = criteria.amountMode !== 'none' && (
+      (criteria.amountMode === 'exact' && criteria.amountEquals) ||
+      (criteria.amountMode === 'range' && (criteria.amountMin || criteria.amountMax))
+    );
+    if (hasAmountCond) {
       ruleCriteria.amountMatchType = criteria.amountMatchType;
     }
 

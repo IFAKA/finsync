@@ -71,10 +71,13 @@ export interface CreateAliasModalProps {
   ) => void;
 }
 
+type AmountMode = 'none' | 'exact' | 'range';
+
 interface AliasCriteria {
   displayName: string;
   pattern: string;
   categoryId: string;
+  amountMode: AmountMode;
   amountEquals: string;
   amountMin: string;
   amountMax: string;
@@ -112,6 +115,7 @@ export function CreateAliasModal({
     displayName: "",
     pattern: "",
     categoryId: "",
+    amountMode: "none",
     amountEquals: "",
     amountMin: "",
     amountMax: "",
@@ -126,10 +130,18 @@ export function CreateAliasModal({
     if (open && transaction) {
       if (existingRule) {
         // Editing existing alias - pre-fill from rule
+        // Determine amount mode from existing values
+        let amountMode: AmountMode = "none";
+        if (existingRule.amountEquals != null) {
+          amountMode = "exact";
+        } else if (existingRule.amountMin != null || existingRule.amountMax != null) {
+          amountMode = "range";
+        }
         setCriteria({
           displayName: existingRule.displayName || "",
           pattern: existingRule.descriptionContains || "",
           categoryId: existingRule.categoryId || "",
+          amountMode,
           amountEquals: existingRule.amountEquals?.toString() || "",
           amountMin: existingRule.amountMin?.toString() || "",
           amountMax: existingRule.amountMax?.toString() || "",
@@ -142,6 +154,7 @@ export function CreateAliasModal({
           displayName: "",
           pattern: extractPattern(desc),
           categoryId: transaction.categoryId || "",
+          amountMode: "none",
           amountEquals: "",
           amountMin: "",
           amountMax: "",
@@ -156,7 +169,10 @@ export function CreateAliasModal({
   // Search for matching transactions when criteria changes
   const searchMatches = useCallback(async () => {
     // Need at least description or an amount condition
-    const hasAmountCondition = criteria.amountEquals || criteria.amountMin || criteria.amountMax;
+    const hasAmountCondition = criteria.amountMode !== 'none' && (
+      (criteria.amountMode === 'exact' && criteria.amountEquals) ||
+      (criteria.amountMode === 'range' && (criteria.amountMin || criteria.amountMax))
+    );
     if (!criteria.pattern && !hasAmountCondition) {
       setMatchingTransactions([]);
       return;
@@ -175,14 +191,16 @@ export function CreateAliasModal({
       if (criteria.pattern) {
         searchCriteria.descriptionContains = criteria.pattern;
       }
-      if (criteria.amountEquals) {
+      if (criteria.amountMode === 'exact' && criteria.amountEquals) {
         searchCriteria.amountEquals = parseFloat(criteria.amountEquals);
       }
-      if (criteria.amountMin) {
-        searchCriteria.amountMin = parseFloat(criteria.amountMin);
-      }
-      if (criteria.amountMax) {
-        searchCriteria.amountMax = parseFloat(criteria.amountMax);
+      if (criteria.amountMode === 'range') {
+        if (criteria.amountMin) {
+          searchCriteria.amountMin = parseFloat(criteria.amountMin);
+        }
+        if (criteria.amountMax) {
+          searchCriteria.amountMax = parseFloat(criteria.amountMax);
+        }
       }
       // Only include amountMatchType if there's an amount condition
       if (hasAmountCondition) {
@@ -196,7 +214,7 @@ export function CreateAliasModal({
       setMatchingTransactions([]);
     }
     setIsSearching(false);
-  }, [criteria.pattern, criteria.amountEquals, criteria.amountMin, criteria.amountMax, criteria.amountMatchType, findSimilar, transaction?.id]);
+  }, [criteria.pattern, criteria.amountMode, criteria.amountEquals, criteria.amountMin, criteria.amountMax, criteria.amountMatchType, findSimilar, transaction?.id]);
 
   // Debounced search
   useEffect(() => {
@@ -209,7 +227,11 @@ export function CreateAliasModal({
     setCriteria((prev) => ({ ...prev, ...updates }));
   }, []);
 
-  const hasCondition = criteria.pattern.trim() || criteria.amountEquals || criteria.amountMin || criteria.amountMax;
+  const hasAmountCondition = criteria.amountMode !== 'none' && (
+    (criteria.amountMode === 'exact' && criteria.amountEquals) ||
+    (criteria.amountMode === 'range' && (criteria.amountMin || criteria.amountMax))
+  );
+  const hasCondition = criteria.pattern.trim() || hasAmountCondition;
   const canProceed = criteria.displayName.trim() && hasCondition;
   const totalCount = matchingTransactions.length + 1; // +1 for the current transaction
 
@@ -222,10 +244,16 @@ export function CreateAliasModal({
   const handleSave = () => {
     const matchingIds = [transaction.id, ...matchingTransactions.map((t) => t.id)];
 
-    const amountEquals = criteria.amountEquals ? parseFloat(criteria.amountEquals) : undefined;
-    const amountMin = criteria.amountMin ? parseFloat(criteria.amountMin) : undefined;
-    const amountMax = criteria.amountMax ? parseFloat(criteria.amountMax) : undefined;
-    const hasAmountCondition = amountEquals != null || amountMin != null || amountMax != null;
+    // Only include amount values based on the selected mode
+    const amountEquals = criteria.amountMode === 'exact' && criteria.amountEquals
+      ? parseFloat(criteria.amountEquals)
+      : undefined;
+    const amountMin = criteria.amountMode === 'range' && criteria.amountMin
+      ? parseFloat(criteria.amountMin)
+      : undefined;
+    const amountMax = criteria.amountMode === 'range' && criteria.amountMax
+      ? parseFloat(criteria.amountMax)
+      : undefined;
     const amountMatchType = hasAmountCondition ? criteria.amountMatchType : undefined;
 
     if (isEditing && existingRule && onUpdate) {
@@ -289,18 +317,25 @@ export function CreateAliasModal({
       <div className="space-y-2">
         <label className="text-sm font-medium">Amount conditions (optional)</label>
         <div className="space-y-2">
+          {/* Amount mode toggle */}
           <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
             {([
-              { value: "expense", label: "Expense" },
-              { value: "income", label: "Income" },
-              { value: "absolute", label: "Both" },
+              { value: "none", label: "None" },
+              { value: "exact", label: "Exact" },
+              { value: "range", label: "Range" },
             ] as const).map((opt) => (
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => updateCriteria({ amountMatchType: opt.value })}
+                onClick={() => updateCriteria({
+                  amountMode: opt.value,
+                  // Clear values when switching modes
+                  ...(opt.value === 'none' ? { amountEquals: "", amountMin: "", amountMax: "" } : {}),
+                  ...(opt.value === 'exact' ? { amountMin: "", amountMax: "" } : {}),
+                  ...(opt.value === 'range' ? { amountEquals: "" } : {}),
+                })}
                 className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  criteria.amountMatchType === opt.value
+                  criteria.amountMode === opt.value
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -309,33 +344,64 @@ export function CreateAliasModal({
               </button>
             ))}
           </div>
-          <Input
-            type="number"
-            step="0.01"
-            value={criteria.amountEquals}
-            onChange={(e) => updateCriteria({ amountEquals: e.target.value, amountMin: "", amountMax: "" })}
-            placeholder="Exact amount"
-            disabled={!!criteria.amountMin || !!criteria.amountMax}
-          />
-          <div className="flex items-center gap-2">
+
+          {/* Expense/Income/Both toggle - only show when amount mode is not 'none' */}
+          {criteria.amountMode !== 'none' && (
+            <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+              {([
+                { value: "expense", label: "Expense" },
+                { value: "income", label: "Income" },
+                { value: "absolute", label: "Both" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => updateCriteria({ amountMatchType: opt.value })}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    criteria.amountMatchType === opt.value
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Exact amount input */}
+          {criteria.amountMode === 'exact' && (
             <Input
               type="number"
               step="0.01"
-              value={criteria.amountMin}
-              onChange={(e) => updateCriteria({ amountMin: e.target.value, amountEquals: "" })}
-              placeholder="Min"
-              disabled={!!criteria.amountEquals}
+              value={criteria.amountEquals}
+              onChange={(e) => updateCriteria({ amountEquals: e.target.value })}
+              placeholder="Exact amount (e.g., 21)"
+              autoFocus
             />
-            <span className="text-muted-foreground">to</span>
-            <Input
-              type="number"
-              step="0.01"
-              value={criteria.amountMax}
-              onChange={(e) => updateCriteria({ amountMax: e.target.value, amountEquals: "" })}
-              placeholder="Max"
-              disabled={!!criteria.amountEquals}
-            />
-          </div>
+          )}
+
+          {/* Range inputs */}
+          {criteria.amountMode === 'range' && (
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                step="0.01"
+                value={criteria.amountMin}
+                onChange={(e) => updateCriteria({ amountMin: e.target.value })}
+                placeholder="Min"
+                autoFocus
+              />
+              <span className="text-muted-foreground">to</span>
+              <Input
+                type="number"
+                step="0.01"
+                value={criteria.amountMax}
+                onChange={(e) => updateCriteria({ amountMax: e.target.value })}
+                placeholder="Max"
+              />
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {isSearching ? (
@@ -540,18 +606,24 @@ export function CreateAliasModal({
           <div className="space-y-2">
             <label className="text-sm font-medium">Amount conditions (optional)</label>
             <div className="space-y-2">
+              {/* Amount mode toggle */}
               <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
                 {([
-                  { value: "expense", label: "Expense" },
-                  { value: "income", label: "Income" },
-                  { value: "absolute", label: "Both" },
+                  { value: "none", label: "None" },
+                  { value: "exact", label: "Exact" },
+                  { value: "range", label: "Range" },
                 ] as const).map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => updateCriteria({ amountMatchType: opt.value })}
+                    onClick={() => updateCriteria({
+                      amountMode: opt.value,
+                      ...(opt.value === 'none' ? { amountEquals: "", amountMin: "", amountMax: "" } : {}),
+                      ...(opt.value === 'exact' ? { amountMin: "", amountMax: "" } : {}),
+                      ...(opt.value === 'range' ? { amountEquals: "" } : {}),
+                    })}
                     className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      criteria.amountMatchType === opt.value
+                      criteria.amountMode === opt.value
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
@@ -560,33 +632,62 @@ export function CreateAliasModal({
                   </button>
                 ))}
               </div>
-              <Input
-                type="number"
-                step="0.01"
-                value={criteria.amountEquals}
-                onChange={(e) => updateCriteria({ amountEquals: e.target.value, amountMin: "", amountMax: "" })}
-                placeholder="Exact amount"
-                disabled={!!criteria.amountMin || !!criteria.amountMax}
-              />
-              <div className="flex items-center gap-2">
+
+              {/* Expense/Income/Both toggle */}
+              {criteria.amountMode !== 'none' && (
+                <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+                  {([
+                    { value: "expense", label: "Expense" },
+                    { value: "income", label: "Income" },
+                    { value: "absolute", label: "Both" },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => updateCriteria({ amountMatchType: opt.value })}
+                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                        criteria.amountMatchType === opt.value
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Exact amount input */}
+              {criteria.amountMode === 'exact' && (
                 <Input
                   type="number"
                   step="0.01"
-                  value={criteria.amountMin}
-                  onChange={(e) => updateCriteria({ amountMin: e.target.value, amountEquals: "" })}
-                  placeholder="Min"
-                  disabled={!!criteria.amountEquals}
+                  value={criteria.amountEquals}
+                  onChange={(e) => updateCriteria({ amountEquals: e.target.value })}
+                  placeholder="Exact amount (e.g., 21)"
                 />
-                <span className="text-muted-foreground">to</span>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={criteria.amountMax}
-                  onChange={(e) => updateCriteria({ amountMax: e.target.value, amountEquals: "" })}
-                  placeholder="Max"
-                  disabled={!!criteria.amountEquals}
-                />
-              </div>
+              )}
+
+              {/* Range inputs */}
+              {criteria.amountMode === 'range' && (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={criteria.amountMin}
+                    onChange={(e) => updateCriteria({ amountMin: e.target.value })}
+                    placeholder="Min"
+                  />
+                  <span className="text-muted-foreground">to</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={criteria.amountMax}
+                    onChange={(e) => updateCriteria({ amountMax: e.target.value })}
+                    placeholder="Max"
+                  />
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {isSearching ? (
