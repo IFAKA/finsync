@@ -40,8 +40,7 @@ export function getDisplayName(
 ): string {
   // Find the first matching rule that has a displayName
   const matchingRule = rules.find(
-    (rule) =>
-      rule.displayName && rule.isEnabled && matchesRule(transaction, rule)
+    (rule) => rule.displayName && matchesRule(transaction, rule)
   );
 
   return matchingRule?.displayName ?? transaction.description;
@@ -55,7 +54,6 @@ export function findMatchingAliasRule(
   rules: LocalRule[]
 ): LocalRule | undefined {
   return rules.find(
-    (rule) =>
-      rule.displayName && rule.isEnabled && matchesRule(transaction, rule)
+    (rule) => rule.displayName && matchesRule(transaction, rule)
   );
 }

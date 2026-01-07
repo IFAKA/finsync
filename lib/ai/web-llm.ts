@@ -171,9 +171,7 @@ export function applyRules(
   transactions: { description: string; amount: number }[],
   rules: Rule[]
 ): { matches: RuleMatchResult[]; unmatchedIndices: number[] } {
-  const enabledRules = rules
-    .filter((r) => r.isEnabled)
-    .sort((a, b) => b.priority - a.priority);
+  const sortedRules = rules.sort((a, b) => b.priority - a.priority);
 
   const matches: RuleMatchResult[] = [];
   const matchedIndices = new Set<number>();
@@ -182,7 +180,7 @@ export function applyRules(
     const tx = transactions[i];
     const descUpper = tx.description.toUpperCase();
 
-    for (const rule of enabledRules) {
+    for (const rule of sortedRules) {
       let isMatch = true;
 
       // Check description contains (case-insensitive)
