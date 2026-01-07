@@ -349,10 +349,116 @@ export function CreateAliasModal({
       </ResponsiveModalHeader>
 
       <div className="grid grid-cols-2 gap-6 p-6">
-        <FormContent variant="desktop" />
+        {/* Form */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="displayName" className="text-sm font-medium">Display as</label>
+            <Input
+              ref={displayNameInputRef}
+              id="displayName"
+              value={criteria.displayName}
+              onChange={(e) => updateCriteria({ displayName: e.target.value })}
+              placeholder="e.g., Gym"
+            />
+            <p className="text-xs text-muted-foreground">
+              This name will be shown instead of the original description
+            </p>
+          </div>
 
+          <div className="space-y-2">
+            <label htmlFor="pattern" className="text-sm font-medium">When description contains</label>
+            <Input
+              id="pattern"
+              value={criteria.pattern}
+              onChange={(e) => updateCriteria({ pattern: e.target.value })}
+              placeholder="e.g., san miguel"
+            />
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {isSearching ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <span>{totalCount} transaction{totalCount !== 1 ? "s" : ""} match</span>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="category" className="text-sm font-medium">Also set category (optional)</label>
+            <Select
+              value={criteria.categoryId || "__KEEP_CURRENT__"}
+              onValueChange={(value) => updateCriteria({ categoryId: value === "__KEEP_CURRENT__" ? "" : value })}
+            >
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Keep current category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__KEEP_CURRENT__">Keep current category</SelectItem>
+                {categories.map((cat: LocalCategory) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: cat.color }}
+                      />
+                      {cat.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Preview */}
         <div className="border-l pl-6">
-          <PreviewContent variant="desktop" />
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium">
+              {totalCount} matching transaction{totalCount !== 1 ? "s" : ""}
+            </h4>
+
+            {isSearching ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">
+                        {criteria.displayName || transaction.description}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        was: {transaction.description}
+                      </p>
+                    </div>
+                    <span className="text-sm tabular-nums shrink-0">
+                      {formatCurrency(transaction.amount)}
+                    </span>
+                  </div>
+                </div>
+
+                {matchingTransactions.map((t) => (
+                  <div key={t.id} className="p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm truncate">
+                          {criteria.displayName || t.description}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(t.date)}
+                          {getCategoryName(t.categoryId) && ` · ${getCategoryName(t.categoryId)}`}
+                        </p>
+                      </div>
+                      <span className="text-sm tabular-nums shrink-0">
+                        {formatCurrency(t.amount)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
