@@ -67,7 +67,8 @@ export function useSimilarTransactionFlow() {
     async (
       criteria: {
         name: string;
-        categoryId: string;
+        categoryId?: string;
+        displayName?: string;
         descriptionContains?: string;
         amountEquals?: number;
         amountMin?: number;
@@ -81,13 +82,16 @@ export function useSimilarTransactionFlow() {
           ? [recentlyCategorized.transaction.id, ...matchingTransactionIds]
           : matchingTransactionIds;
 
-        // Bulk update transactions
-        const previousStates = await bulkUpdate(allIds, { categoryId: criteria.categoryId });
+        // Bulk update transactions (only if category is set)
+        const previousStates = criteria.categoryId
+          ? await bulkUpdate(allIds, { categoryId: criteria.categoryId })
+          : [];
 
         // Create the rule
         const rule = await createRule({
           name: criteria.name,
           categoryId: criteria.categoryId,
+          displayName: criteria.displayName,
           descriptionContains: criteria.descriptionContains,
           amountEquals: criteria.amountEquals,
           amountMin: criteria.amountMin,

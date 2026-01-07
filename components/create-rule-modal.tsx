@@ -19,10 +19,21 @@ export interface CreateRuleModalProps {
   onOpenChange: (open: boolean) => void;
   prefillTransaction?: LocalTransaction;
   prefillCategoryId?: string;
+  editingRule?: {
+    id: string;
+    name: string;
+    categoryId?: string;
+    displayName?: string;
+    descriptionContains?: string;
+    amountEquals?: number;
+    amountMin?: number;
+    amountMax?: number;
+  };
   onSave: (
     criteria: {
       name: string;
-      categoryId: string;
+      categoryId?: string;
+      displayName?: string;
       descriptionContains?: string;
       amountEquals?: number;
       amountMin?: number;
@@ -37,10 +48,12 @@ export function CreateRuleModal({
   onOpenChange,
   prefillTransaction,
   prefillCategoryId,
+  editingRule,
   onSave,
 }: CreateRuleModalProps) {
   const isMobile = useIsMobile();
   const { data: categories } = useCategories();
+  const isEditing = !!editingRule;
 
   const {
     step,
@@ -52,7 +65,7 @@ export function CreateRuleModal({
     canProceed,
     totalCount,
     buildRuleCriteria,
-  } = useRuleForm({ open, prefillTransaction, prefillCategoryId });
+  } = useRuleForm({ open, prefillTransaction, prefillCategoryId, initialRule: editingRule });
 
   const getCategoryName = (categoryId?: string): string => {
     if (!categoryId) return "Unknown";
@@ -82,7 +95,7 @@ export function CreateRuleModal({
             >
               <ResponsiveModalHeader>
                 <ResponsiveModalTitle>
-                  Create Rule{criteria.categoryId && ` for "${selectedCategoryName}"`}
+                  {isEditing ? "Edit Rule" : "Create Rule"}{criteria.categoryId && ` for "${selectedCategoryName}"`}
                 </ResponsiveModalTitle>
               </ResponsiveModalHeader>
 
@@ -141,7 +154,7 @@ export function CreateRuleModal({
 
               <ResponsiveModalFooter className="p-4 pt-0">
                 <Button className="w-full" onClick={handleSave}>
-                  Save & Apply to {totalCount}
+                  {isEditing ? "Save Changes" : `Save & Apply to ${totalCount}`}
                 </Button>
               </ResponsiveModalFooter>
             </motion.div>
@@ -155,7 +168,7 @@ export function CreateRuleModal({
   return (
     <ResponsiveModal open={open} onOpenChange={onOpenChange} className="max-w-2xl">
       <ResponsiveModalHeader>
-        <ResponsiveModalTitle>Create Rule</ResponsiveModalTitle>
+        <ResponsiveModalTitle>{isEditing ? "Edit Rule" : "Create Rule"}</ResponsiveModalTitle>
       </ResponsiveModalHeader>
 
       <div className="grid grid-cols-2 gap-6 p-6">
@@ -183,12 +196,12 @@ export function CreateRuleModal({
         </div>
       </div>
 
-      <div className="flex justify-end gap-2 p-6 pt-0 border-t mt-4">
+      <div className="flex justify-end gap-2 p-6 pt-6 border-t mt-4">
         <Button variant="secondary" onClick={() => onOpenChange(false)}>
           Cancel
         </Button>
         <Button onClick={handleSave} disabled={!canProceed}>
-          Save & Apply to {totalCount}
+          {isEditing ? "Save Changes" : `Save & Apply to ${totalCount}`}
         </Button>
       </div>
     </ResponsiveModal>

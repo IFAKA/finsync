@@ -44,7 +44,7 @@ export function RuleFormStep({
           value={criteria.categoryId}
           onChange={(e) => onCriteriaChange({ categoryId: e.target.value })}
         >
-          <option value="">Select category...</option>
+          <option value="">No category change</option>
           {categories.map((cat) => (
             <option key={cat.id} value={cat.id}>
               {cat.name}
@@ -53,130 +53,65 @@ export function RuleFormStep({
         </select>
       </div>
 
-      <div className="border-t pt-4">
-        <p className="text-sm font-medium mb-3">Match transactions where:</p>
+      {/* Display Name (Alias) */}
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">Display As</label>
+        <Input
+          placeholder="e.g., Rent"
+          value={criteria.displayName}
+          onChange={(e) => onCriteriaChange({ displayName: e.target.value })}
+        />
+        <p className="text-xs text-muted-foreground">
+          {criteria.categoryId && criteria.displayName
+            ? "Will set category and rename"
+            : criteria.displayName
+              ? "Will rename matching transactions"
+              : "Optional - leave empty to only set category"}
+        </p>
+      </div>
 
-        {/* Description Contains */}
-        {isMobile ? (
-          <div
-            className={`p-3 rounded-lg border-2 transition-colors ${
-              criteria.descriptionContains ? "border-foreground bg-muted/30" : "border-border"
-            }`}
-          >
-            <label className="text-xs font-medium text-muted-foreground">
-              Description contains
-            </label>
+      <div className="border-t pt-4">
+        <p className="text-sm font-medium mb-3">Conditions (at least one)</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Exact Amount</label>
             <Input
-              className="mt-1.5 border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0"
-              placeholder="e.g., TRANSFER TO 5678"
+              type="number"
+              step="0.01"
+              placeholder="-395"
+              value={criteria.amountEquals}
+              onChange={(e) => onCriteriaChange({ amountEquals: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Contains</label>
+            <Input
+              placeholder="ALQUILER"
               value={criteria.descriptionContains}
               onChange={(e) => onCriteriaChange({ descriptionContains: e.target.value })}
             />
           </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
-                Description contains
-              </label>
-              <Input
-                placeholder="e.g., TRANSFER TO 5678"
-                value={criteria.descriptionContains}
-                onChange={(e) => onCriteriaChange({ descriptionContains: e.target.value })}
-              />
-            </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Min</label>
+            <Input
+              type="number"
+              step="0.01"
+              placeholder="-500"
+              value={criteria.amountMin}
+              onChange={(e) => onCriteriaChange({ amountMin: e.target.value })}
+            />
           </div>
-        )}
-
-        {/* Amount Filter */}
-        {isMobile ? (
-          <div
-            className={`mt-3 p-3 rounded-lg border-2 transition-colors ${
-              criteria.useAmountFilter ? "border-foreground bg-muted/30" : "border-border"
-            }`}
-            onClick={() => onCriteriaChange({ useAmountFilter: !criteria.useAmountFilter })}
-          >
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-muted-foreground">
-                Amount between
-              </label>
-              <div
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                  criteria.useAmountFilter
-                    ? "border-foreground bg-foreground"
-                    : "border-muted-foreground"
-                }`}
-              >
-                {criteria.useAmountFilter && (
-                  <div className="w-2 h-2 rounded-full bg-background" />
-                )}
-              </div>
-            </div>
-            {criteria.useAmountFilter && (
-              <div
-                className="flex gap-2 mt-2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="Min"
-                  value={criteria.amountMin}
-                  onChange={(e) => onCriteriaChange({ amountMin: e.target.value })}
-                  className="flex-1"
-                />
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="Max"
-                  value={criteria.amountMax}
-                  onChange={(e) => onCriteriaChange({ amountMax: e.target.value })}
-                  className="flex-1"
-                />
-              </div>
-            )}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Max</label>
+            <Input
+              type="number"
+              step="0.01"
+              placeholder="-300"
+              value={criteria.amountMax}
+              onChange={(e) => onCriteriaChange({ amountMax: e.target.value })}
+            />
           </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 mt-3">
-              <input
-                type="checkbox"
-                id="useAmount"
-                checked={criteria.useAmountFilter}
-                onChange={(e) => onCriteriaChange({ useAmountFilter: e.target.checked })}
-                className="rounded"
-              />
-              <label htmlFor="useAmount" className="text-sm">
-                Filter by amount
-              </label>
-            </div>
-
-            {criteria.useAmountFilter && (
-              <div className="grid grid-cols-2 gap-2 mt-3">
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Min</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="-500"
-                    value={criteria.amountMin}
-                    onChange={(e) => onCriteriaChange({ amountMin: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Max</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="-300"
-                    value={criteria.amountMax}
-                    onChange={(e) => onCriteriaChange({ amountMax: e.target.value })}
-                  />
-                </div>
-              </div>
-            )}
-          </>
-        )}
+        </div>
       </div>
 
       {/* Match count (mobile only) */}
