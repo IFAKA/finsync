@@ -13,17 +13,20 @@ function matchesRule(transaction: LocalTransaction, rule: LocalRule): boolean {
     if (!matchesDesc) return false;
   }
 
+  // Use absolute value for amount comparisons (expenses are negative)
+  const absAmount = Math.abs(transaction.amount);
+
   // Amount equals (with small tolerance for floating point)
   if (rule.amountEquals != null) {
-    if (Math.abs(transaction.amount - rule.amountEquals) > 0.01) return false;
+    if (Math.abs(absAmount - rule.amountEquals) > 0.01) return false;
   }
 
   // Amount range
   if (rule.amountMin != null) {
-    if (transaction.amount < rule.amountMin) return false;
+    if (absAmount < rule.amountMin) return false;
   }
   if (rule.amountMax != null) {
-    if (transaction.amount > rule.amountMax) return false;
+    if (absAmount > rule.amountMax) return false;
   }
 
   return true;
