@@ -77,7 +77,7 @@ export function MonthNavigator({
           exit={{ opacity: 0, y: 8 }}
           className={`${textSize} font-semibold ${minWidth} text-center`}
         >
-          {selectedMonth ? formatMonth(selectedMonth, { year: "2-digit" }) : "—"}
+          {selectedMonth ? formatMonth(selectedMonth) : "—"}
         </motion.span>
       </AnimatePresence>
       <motion.button
