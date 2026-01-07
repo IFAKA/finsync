@@ -160,14 +160,12 @@ export default function RulesPage() {
                     key={rule.id}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="p-3 sm:p-4"
+                    className="p-3 sm:p-4 hover:bg-muted/5 active:bg-muted/10 transition-colors cursor-pointer"
+                    onClick={() => openEditModal(rule)}
                   >
                     {/* Mobile Layout */}
                     <div className="flex items-start gap-2 md:hidden">
-                      <button
-                        className="flex-1 min-w-0 text-left"
-                        onClick={() => openEditModal(rule)}
-                      >
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium text-sm">{rule.name}</span>
                           {categoryInfo && (
@@ -190,18 +188,15 @@ export default function RulesPage() {
                           {rule.amountMax != null && <span>&le; {formatCurrency(rule.amountMax)}</span>}
                           {rule.descriptionContains && <span>"{rule.descriptionContains}"</span>}
                         </div>
-                      </button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-error" onClick={() => handleDeleteClick(rule.id, rule.name)}>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-error" onClick={(e) => { e.stopPropagation(); handleDeleteClick(rule.id, rule.name); }}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
 
                     {/* Desktop Layout */}
                     <div className="hidden md:flex items-center justify-between">
-                      <button
-                        className="flex-1 text-left cursor-pointer hover:opacity-70 transition-opacity"
-                        onClick={() => openEditModal(rule)}
-                      >
+                      <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{rule.name}</span>
                           {categoryInfo && (
@@ -224,8 +219,8 @@ export default function RulesPage() {
                           {rule.amountMax != null && <span>Max: {formatCurrency(rule.amountMax)}</span>}
                           {rule.descriptionContains && <span>Contains: "{rule.descriptionContains}"</span>}
                         </div>
-                      </button>
-                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-error" onClick={() => handleDeleteClick(rule.id, rule.name)}>
+                      </div>
+                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-error" onClick={(e) => { e.stopPropagation(); handleDeleteClick(rule.id, rule.name); }}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
