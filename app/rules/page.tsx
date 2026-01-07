@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CreateRuleModal } from "@/components/create-rule-modal";
-import { useRules, useCategories, useRuleMutations, type LocalRule } from "@/lib/hooks/db";
+import { useRules, useCategories, useRuleMutations, useTransactionMutations, type LocalRule } from "@/lib/hooks/db";
 import type { AmountMatchType } from "@/lib/db/schema";
 import { formatCurrency } from "@/lib/utils";
 import { playSound } from "@/lib/sounds";
@@ -21,6 +21,7 @@ export default function RulesPage() {
   const { data: rules, isLoading } = useRules();
   const { data: categories } = useCategories();
   const { create: createRule, update: updateRule, remove: deleteRule } = useRuleMutations();
+  const { bulkUpdate } = useTransactionMutations();
 
   const openCreateModal = () => {
     setEditingRule(null);
@@ -43,7 +44,7 @@ export default function RulesPage() {
       amountMax?: number;
       amountMatchType?: AmountMatchType;
     },
-    _matchingTransactionIds: string[]
+    matchingTransactionIds: string[]
   ) => {
     // Check if assigning Income to a rule that only matches negative amounts
     if (criteria.categoryId) {
@@ -58,6 +59,11 @@ export default function RulesPage() {
     }
 
     try {
+      // Apply category to existing matching transactions
+      if (criteria.categoryId && matchingTransactionIds.length > 0) {
+        await bulkUpdate(matchingTransactionIds, { categoryId: criteria.categoryId });
+      }
+
       if (editingRule) {
         await updateRule(editingRule.id, {
           name: criteria.name,
