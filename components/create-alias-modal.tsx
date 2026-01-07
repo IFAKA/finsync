@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -80,6 +80,7 @@ export function CreateAliasModal({
   });
   const [matchingTransactions, setMatchingTransactions] = useState<LocalTransaction[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const displayNameInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize form when transaction changes
   useEffect(() => {
@@ -154,6 +155,7 @@ export function CreateAliasModal({
       <div className="space-y-2">
         <label htmlFor="displayName" className="text-sm font-medium">Display as</label>
         <Input
+          ref={variant === "desktop" ? displayNameInputRef : undefined}
           id="displayName"
           value={criteria.displayName}
           onChange={(e) => updateCriteria({ displayName: e.target.value })}
@@ -333,7 +335,15 @@ export function CreateAliasModal({
 
   // Desktop: Single view with inline preview
   return (
-    <ResponsiveModal open={open} onOpenChange={onOpenChange} className="max-w-2xl">
+    <ResponsiveModal
+      open={open}
+      onOpenChange={onOpenChange}
+      className="max-w-2xl"
+      onOpenAutoFocus={(e) => {
+        e.preventDefault();
+        displayNameInputRef.current?.focus();
+      }}
+    >
       <ResponsiveModalHeader>
         <ResponsiveModalTitle>Rename Transaction</ResponsiveModalTitle>
       </ResponsiveModalHeader>

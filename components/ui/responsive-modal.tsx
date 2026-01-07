@@ -24,6 +24,7 @@ interface ResponsiveModalProps {
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
   className?: string;
+  onOpenAutoFocus?: (event: Event) => void;
 }
 
 export function ResponsiveModal({
@@ -31,6 +32,7 @@ export function ResponsiveModal({
   onOpenChange,
   children,
   className,
+  onOpenAutoFocus,
 }: ResponsiveModalProps) {
   const isMobile = useIsMobile();
 
@@ -44,7 +46,7 @@ export function ResponsiveModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={className} aria-describedby={undefined}>
+      <DialogContent className={className} aria-describedby={undefined} onOpenAutoFocus={onOpenAutoFocus}>
         {children}
       </DialogContent>
     </Dialog>
