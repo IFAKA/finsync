@@ -12,11 +12,12 @@ import {
   PiggyBank,
   Target,
 } from "lucide-react";
-import { formatCurrency, formatMonth } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { AnimatedNumber } from "@/components/motion";
 import { MonthNavigator } from "@/components/month-navigator";
-import type { LocalCategory } from "@/lib/hooks/db";
 import type { BudgetItem } from "./use-dashboard-data";
+import { AIInsightsCompact } from "./ai-insights";
+import { useAIInsights } from "./use-ai-insights";
 
 interface BentoMobileProps {
   summary: {
@@ -32,7 +33,7 @@ interface BentoMobileProps {
   availableMonths: string[];
   onUploadClick: () => void;
   onMonthChange: (month: string) => void;
-  categories: LocalCategory[];
+  categories: Array<{ id: string; name: string }>;
   topCategories: Array<{
     categoryId: string;
     amount: number;
@@ -45,19 +46,26 @@ interface BentoMobileProps {
 
 export function BentoMobileDashboard({
   summary,
-  budgetData,
   attentionCount,
   transactionCount,
   selectedMonth,
   availableMonths,
   onUploadClick,
   onMonthChange,
+  categories,
   topCategories,
   budgetPercent,
   budgetTotal,
 }: BentoMobileProps) {
   const router = useRouter();
   const maxCategorySpend = topCategories[0]?.amount || 1;
+
+  // AI Insights
+  const aiInsights = useAIInsights({
+    summary,
+    selectedMonth,
+    categories,
+  });
 
   return (
     <div className="space-y-3 md:hidden">
@@ -174,6 +182,13 @@ export function BentoMobileDashboard({
           )}
         </motion.div>
       </div>
+
+      {/* AI Insights */}
+      <AIInsightsCompact
+        insight={aiInsights.insight}
+        isLoading={aiInsights.isLoading}
+        isModelLoading={aiInsights.isModelLoading}
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 10 }}

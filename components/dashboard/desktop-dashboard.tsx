@@ -9,7 +9,6 @@ import {
   ArrowRight,
   AlertTriangle,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -27,10 +26,11 @@ import {
   FadeIn,
   StaggerItem,
 } from "@/components/motion";
-import { playSound } from "@/lib/sounds";
 import { MonthNavigator } from "@/components/month-navigator";
 import type { LocalCategory, LocalTransaction, LocalRule } from "@/lib/hooks/db";
 import { getCategoryInfo } from "./use-dashboard-data";
+import { AIInsights } from "./ai-insights";
+import { useAIInsights } from "./use-ai-insights";
 
 interface DesktopDashboardProps {
   summary: {
@@ -71,6 +71,13 @@ export function DesktopDashboard({
   rules,
 }: DesktopDashboardProps) {
   const router = useRouter();
+
+  // AI Insights
+  const aiInsights = useAIInsights({
+    summary,
+    selectedMonth,
+    categories,
+  });
 
   const handleCategoryClick = (categoryId: string | number | null) => {
     if (!categoryId) return;
@@ -154,6 +161,16 @@ export function DesktopDashboard({
           </Card>
         </StaggerItem>
       </div>
+
+      {/* AI Insights */}
+      <AIInsights
+        insight={aiInsights.insight}
+        isLoading={aiInsights.isLoading}
+        isModelLoading={aiInsights.isModelLoading}
+        modelProgress={aiInsights.modelProgress}
+        error={aiInsights.error}
+        onRegenerate={aiInsights.regenerate}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FadeIn delay={0.2}>

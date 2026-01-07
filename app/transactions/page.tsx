@@ -114,12 +114,15 @@ function TransactionsContent() {
         categories={categories}
         availableMonths={availableMonths}
         hasFilters={filters.hasFilters}
+        amountMin={filters.amountMin}
+        amountMax={filters.amountMax}
         onSearchChange={filters.setSearch}
         onCategoryChange={filters.handleCategoryFilterChange}
         onMonthChange={filters.handleMonthFilterChange}
         onSortChange={filters.setSortBy}
         onNeedsAttentionChange={filters.setNeedsAttention}
         onClearFilters={filters.clearFilters}
+        onApplyNLFilters={filters.applyNLFilters}
       />
 
       <DesktopTransactionFilters
@@ -132,12 +135,15 @@ function TransactionsContent() {
         categories={categories}
         availableMonths={availableMonths}
         hasFilters={filters.hasFilters}
+        amountMin={filters.amountMin}
+        amountMax={filters.amountMax}
         onSearchChange={filters.setSearch}
         onCategoryChange={filters.handleCategoryFilterChange}
         onMonthChange={filters.handleMonthFilterChange}
         onSortChange={filters.setSortBy}
         onNeedsAttentionChange={filters.setNeedsAttention}
         onClearFilters={filters.clearFilters}
+        onApplyNLFilters={filters.applyNLFilters}
       />
 
       <TransactionList

@@ -541,6 +541,277 @@ function extractJsonObjects(str: string): object[] {
   return objects;
 }
 
+// ============================================
+// NATURAL LANGUAGE SEARCH
+// ============================================
+
+export interface ParsedSearchQuery {
+  search?: string; // Text to search in description/merchant
+  category?: string; // Category name to filter by
+  month?: string; // Month in YYYY-MM format
+  amountMin?: number;
+  amountMax?: number;
+  sortBy?: "date" | "amount";
+}
+
+const MONTH_NAMES: Record<string, number> = {
+  january: 1, jan: 1, enero: 1, ene: 1,
+  february: 2, feb: 2, febrero: 2,
+  march: 3, mar: 3, marzo: 3,
+  april: 4, apr: 4, abril: 4, abr: 4,
+  may: 5, mayo: 5,
+  june: 6, jun: 6, junio: 6,
+  july: 7, jul: 7, julio: 7,
+  august: 8, aug: 8, agosto: 8, ago: 8,
+  september: 9, sep: 9, sept: 9, septiembre: 9,
+  october: 10, oct: 10, octubre: 10,
+  november: 11, nov: 11, noviembre: 11,
+  december: 12, dec: 12, diciembre: 12, dic: 12,
+};
+
+// Parse natural language query without using LLM (fast, deterministic)
+export function parseNLQueryLocal(
+  query: string,
+  categories: string[],
+  currentDate: Date = new Date()
+): ParsedSearchQuery {
+  const result: ParsedSearchQuery = {};
+  const queryLower = query.toLowerCase().trim();
+
+  // Extract amount conditions
+  const overMatch = queryLower.match(/(?:over|above|more than|mayor que|más de)\s*[€$]?\s*(\d+)/i);
+  const underMatch = queryLower.match(/(?:under|below|less than|menor que|menos de)\s*[€$]?\s*(\d+)/i);
+  const betweenMatch = queryLower.match(/between\s*[€$]?\s*(\d+)\s*(?:and|y|-)\s*[€$]?\s*(\d+)/i);
+
+  if (betweenMatch) {
+    result.amountMin = parseFloat(betweenMatch[1]);
+    result.amountMax = parseFloat(betweenMatch[2]);
+  } else {
+    if (overMatch) result.amountMin = parseFloat(overMatch[1]);
+    if (underMatch) result.amountMax = parseFloat(underMatch[1]);
+  }
+
+  // Extract sort preference
+  if (/(?:most expensive|biggest|largest|sort by amount|ordenar por cantidad)/i.test(queryLower)) {
+    result.sortBy = "amount";
+  }
+
+  // Extract month - relative terms
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1;
+
+  if (/(?:this month|este mes)/i.test(queryLower)) {
+    result.month = `${currentYear}-${String(currentMonth).padStart(2, "0")}`;
+  } else if (/(?:last month|mes pasado|el mes pasado)/i.test(queryLower)) {
+    const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+    result.month = `${lastMonthYear}-${String(lastMonth).padStart(2, "0")}`;
+  }
+
+  // Extract month - by name
+  for (const [name, monthNum] of Object.entries(MONTH_NAMES)) {
+    const monthRegex = new RegExp(`\\b${name}\\b`, "i");
+    if (monthRegex.test(queryLower)) {
+      // Check if year is mentioned
+      const yearMatch = queryLower.match(/\b(202\d)\b/);
+      const year = yearMatch ? parseInt(yearMatch[1]) : currentYear;
+      result.month = `${year}-${String(monthNum).padStart(2, "0")}`;
+      break;
+    }
+  }
+
+  // Extract category - fuzzy match against available categories
+  const categoryLower = categories.map(c => c.toLowerCase());
+  for (let i = 0; i < categories.length; i++) {
+    const cat = categoryLower[i];
+    // Check for exact or partial match
+    if (queryLower.includes(cat) || cat.split(/\s+/).some(word => queryLower.includes(word) && word.length > 3)) {
+      result.category = categories[i];
+      break;
+    }
+  }
+
+  // Common category aliases
+  const categoryAliases: Record<string, string[]> = {
+    "Food & Dining": ["food", "restaurant", "dining", "comida", "restaurante", "eating out"],
+    "Groceries": ["grocery", "groceries", "supermarket", "supermercado", "mercado"],
+    "Transportation": ["transport", "travel", "uber", "taxi", "transporte", "viaje"],
+    "Shopping": ["shopping", "compras", "amazon", "tienda"],
+    "Subscriptions": ["subscription", "subscriptions", "netflix", "spotify", "suscripción"],
+    "Housing": ["rent", "housing", "alquiler", "vivienda", "hipoteca"],
+    "Health": ["health", "medical", "pharmacy", "salud", "farmacia", "médico"],
+    "Income": ["income", "salary", "ingreso", "salario", "nómina"],
+  };
+
+  if (!result.category) {
+    for (const [catName, aliases] of Object.entries(categoryAliases)) {
+      if (aliases.some(alias => queryLower.includes(alias))) {
+        // Find matching category in available categories
+        const match = categories.find(c => c.toLowerCase() === catName.toLowerCase());
+        if (match) {
+          result.category = match;
+          break;
+        }
+      }
+    }
+  }
+
+  // Extract search terms - remove recognized patterns to get the "search" part
+  let searchText = queryLower
+    .replace(/(?:over|above|more than|mayor que|más de)\s*[€$]?\s*\d+/gi, "")
+    .replace(/(?:under|below|less than|menor que|menos de)\s*[€$]?\s*\d+/gi, "")
+    .replace(/between\s*[€$]?\s*\d+\s*(?:and|y|-)\s*[€$]?\s*\d+/gi, "")
+    .replace(/(?:most expensive|biggest|largest|sort by amount|ordenar por cantidad)/gi, "")
+    .replace(/(?:this month|este mes|last month|mes pasado|el mes pasado)/gi, "")
+    .replace(/\b(202\d)\b/g, "")
+    .replace(/(?:in|en|from|de|during|durante)\s+/gi, " ");
+
+  // Remove month names
+  for (const name of Object.keys(MONTH_NAMES)) {
+    searchText = searchText.replace(new RegExp(`\\b${name}\\b`, "gi"), "");
+  }
+
+  // Remove category name if found
+  if (result.category) {
+    searchText = searchText.replace(new RegExp(result.category, "gi"), "");
+  }
+
+  // Clean up and extract merchant/description search
+  searchText = searchText.replace(/\s+/g, " ").trim();
+
+  // Remove common query words
+  searchText = searchText
+    .replace(/\b(show|find|search|get|list|buscar|mostrar|ver|transactions?|transacciones?|purchases?|compras?|payments?|pagos?|spent|gastado|spending|gasto)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (searchText.length > 1) {
+    result.search = searchText;
+  }
+
+  return result;
+}
+
+// Check if a query looks like natural language (vs simple keyword search)
+export function isNaturalLanguageQuery(query: string): boolean {
+  const nlIndicators = [
+    /\b(show|find|search|get|list|buscar|mostrar|ver)\b/i,
+    /\b(over|above|under|below|more than|less than|between)\b/i,
+    /\b(this month|last month|este mes|mes pasado)\b/i,
+    /\b(most expensive|biggest|sort by)\b/i,
+    /\b(in|from|during)\s+(january|february|march|april|may|june|july|august|september|october|november|december)/i,
+    /\b(en|de|durante)\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i,
+  ];
+
+  return nlIndicators.some(pattern => pattern.test(query));
+}
+
+// ============================================
+// AI INSIGHTS GENERATION
+// ============================================
+
+export interface SpendingData {
+  totalExpenses: number;
+  totalIncome: number;
+  savings: number;
+  byCategory: Array<{
+    categoryName: string;
+    amount: number;
+    percentOfTotal: number;
+  }>;
+  // Optional comparison data
+  previousMonth?: {
+    totalExpenses: number;
+    totalIncome: number;
+  };
+  // Budget info
+  budgetUsed?: number;
+  budgetTotal?: number;
+}
+
+export async function generateSpendingInsights(
+  data: SpendingData,
+  monthLabel: string,
+  onProgress?: LoadingCallback
+): Promise<string> {
+  // Build a structured prompt with pre-computed data
+  const topCategories = data.byCategory
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 3);
+
+  const dataPoints: string[] = [];
+
+  // Basic stats
+  dataPoints.push(`Month: ${monthLabel}`);
+  dataPoints.push(`Total spent: €${data.totalExpenses.toFixed(0)}`);
+  dataPoints.push(`Total income: €${data.totalIncome.toFixed(0)}`);
+  dataPoints.push(`Savings: €${data.savings.toFixed(0)} (${data.savings >= 0 ? "positive" : "negative"})`);
+
+  // Top categories
+  if (topCategories.length > 0) {
+    dataPoints.push(`Top spending: ${topCategories.map(c => `${c.categoryName} €${c.amount.toFixed(0)} (${c.percentOfTotal.toFixed(0)}%)`).join(", ")}`);
+  }
+
+  // Month-over-month comparison
+  if (data.previousMonth) {
+    const expenseChange = data.totalExpenses - data.previousMonth.totalExpenses;
+    const expenseChangePercent = data.previousMonth.totalExpenses > 0
+      ? ((expenseChange / data.previousMonth.totalExpenses) * 100).toFixed(0)
+      : "N/A";
+    dataPoints.push(`vs last month: ${expenseChange >= 0 ? "+" : ""}€${expenseChange.toFixed(0)} (${expenseChangePercent}%)`);
+  }
+
+  // Budget status
+  if (data.budgetTotal && data.budgetTotal > 0) {
+    const budgetPercent = ((data.budgetUsed || 0) / data.budgetTotal * 100).toFixed(0);
+    dataPoints.push(`Budget: ${budgetPercent}% used (€${data.budgetUsed?.toFixed(0) || 0} of €${data.budgetTotal.toFixed(0)})`);
+  }
+
+  await initWebLLM(onProgress);
+
+  const systemPrompt = `You generate brief, friendly financial insights. Write 2-3 short sentences.
+Rules:
+- Be conversational, not formal
+- Focus on the most notable observation
+- If savings are negative, gently note it
+- If spending increased significantly, mention it
+- Keep it under 50 words total
+- No bullet points, just flowing text
+- Use € symbol for amounts`;
+
+  const prompt = `Generate a brief insight from this spending data:
+${dataPoints.join("\n")}
+
+Write 2-3 sentences highlighting the most interesting observation:`;
+
+  try {
+    const response = await generateCompletion(prompt, systemPrompt);
+    // Clean up response - remove quotes if present
+    return response.replace(/^["']|["']$/g, "").trim();
+  } catch (error) {
+    console.error("[WebLLM] Insights generation failed:", error);
+    // Fallback to a simple template-based insight
+    return generateFallbackInsight(data, monthLabel);
+  }
+}
+
+function generateFallbackInsight(data: SpendingData, monthLabel: string): string {
+  const parts: string[] = [];
+
+  if (data.savings >= 0) {
+    parts.push(`You saved €${data.savings.toFixed(0)} in ${monthLabel}.`);
+  } else {
+    parts.push(`You spent €${Math.abs(data.savings).toFixed(0)} more than you earned in ${monthLabel}.`);
+  }
+
+  if (data.byCategory.length > 0) {
+    const top = data.byCategory.sort((a, b) => b.amount - a.amount)[0];
+    parts.push(`${top.categoryName} was your biggest expense at €${top.amount.toFixed(0)}.`);
+  }
+
+  return parts.join(" ");
+}
+
 function parseCategorizationResponse(
   response: string,
   categories: string[]

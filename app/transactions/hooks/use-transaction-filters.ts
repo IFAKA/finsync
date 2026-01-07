@@ -15,6 +15,8 @@ interface UseTransactionFiltersOptions {
   initialSortBy?: "date" | "amount";
   initialPage?: number;
   initialNeedsAttention?: boolean;
+  initialAmountMin?: number;
+  initialAmountMax?: number;
   availableMonths: string[];
   allTransactions: LocalTransaction[];
   rules?: LocalRule[];
@@ -31,6 +33,8 @@ export function useTransactionFilters({
   initialSortBy = "date",
   initialPage = 0,
   initialNeedsAttention = false,
+  initialAmountMin,
+  initialAmountMax,
   availableMonths,
   allTransactions,
   rules = [],
@@ -47,6 +51,8 @@ export function useTransactionFilters({
   const [sortBy, setSortBy] = useState<"date" | "amount">(initialSortBy);
   const [page, setPage] = useState(initialPage);
   const [needsAttention, setNeedsAttention] = useState(initialNeedsAttention);
+  const [amountMin, setAmountMin] = useState<number | undefined>(initialAmountMin);
+  const [amountMax, setAmountMax] = useState<number | undefined>(initialAmountMax);
 
   // Debounce search
   useEffect(() => {
@@ -87,6 +93,14 @@ export function useTransactionFilters({
       });
     }
 
+    // Amount filters (use absolute value for comparison)
+    if (amountMin !== undefined) {
+      result = result.filter((t) => Math.abs(t.amount) >= amountMin);
+    }
+    if (amountMax !== undefined) {
+      result = result.filter((t) => Math.abs(t.amount) <= amountMax);
+    }
+
     // Sort
     if (sortBy === "amount") {
       result.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
@@ -95,7 +109,7 @@ export function useTransactionFilters({
     }
 
     return result;
-  }, [allTransactions, debouncedSearch, sortBy, needsAttention, rules]);
+  }, [allTransactions, debouncedSearch, sortBy, needsAttention, rules, amountMin, amountMax]);
 
   // Paginate
   const paginatedTransactions = useMemo(() => {
@@ -180,6 +194,12 @@ export function useTransactionFilters({
     onNeedsAttentionChange?.(value);
   };
 
+  const handleAmountFilterChange = (min?: number, max?: number) => {
+    setAmountMin(min);
+    setAmountMax(max);
+    setPage(0);
+  };
+
   const clearFilters = () => {
     setSearch("");
     setDebouncedSearch("");
@@ -188,10 +208,45 @@ export function useTransactionFilters({
     setSortBy("date");
     setPage(0);
     setNeedsAttention(false);
+    setAmountMin(undefined);
+    setAmountMax(undefined);
     router.replace("/transactions", { scroll: false });
     onCategoryChange?.("all");
     onMonthChange?.("all");
     onNeedsAttentionChange?.(false);
+  };
+
+  // Bulk apply filters from NL search
+  const applyNLFilters = (filters: {
+    search?: string;
+    category?: string;
+    month?: string;
+    sortBy?: "date" | "amount";
+    amountMin?: number;
+    amountMax?: number;
+  }) => {
+    if (filters.search !== undefined) {
+      setSearch(filters.search);
+      setDebouncedSearch(filters.search);
+    }
+    if (filters.category) {
+      setSelectedCategory(filters.category);
+      onCategoryChange?.(filters.category);
+    }
+    if (filters.month) {
+      setSelectedMonth(filters.month);
+      onMonthChange?.(filters.month);
+    }
+    if (filters.sortBy) {
+      setSortBy(filters.sortBy);
+    }
+    if (filters.amountMin !== undefined) {
+      setAmountMin(filters.amountMin);
+    }
+    if (filters.amountMax !== undefined) {
+      setAmountMax(filters.amountMax);
+    }
+    setPage(0);
   };
 
   // "all" is the default for month, so selecting a specific month IS a filter
@@ -200,7 +255,9 @@ export function useTransactionFilters({
     selectedCategory !== "all" ||
     sortBy !== "date" ||
     needsAttention ||
-    (selectedMonth && selectedMonth !== "all")
+    (selectedMonth && selectedMonth !== "all") ||
+    amountMin !== undefined ||
+    amountMax !== undefined
   );
 
   const activeFilterCount = [
@@ -209,6 +266,8 @@ export function useTransactionFilters({
     sortBy !== "date",
     needsAttention,
     selectedMonth && selectedMonth !== "all",
+    amountMin !== undefined,
+    amountMax !== undefined,
   ].filter(Boolean).length;
 
   const navigateMonth = (delta: number) => {
@@ -239,6 +298,8 @@ export function useTransactionFilters({
     sortBy,
     page,
     needsAttention,
+    amountMin,
+    amountMax,
     // Computed
     filteredTransactions,
     paginatedTransactions,
@@ -253,10 +314,12 @@ export function useTransactionFilters({
     setPage: handlePageChange,
     setSortBy: handleSortChange,
     setNeedsAttention: handleNeedsAttentionChange,
+    setAmountFilter: handleAmountFilterChange,
     handleCategoryFilterChange,
     handleMonthFilterChange,
     clearFilters,
     navigateMonth,
+    applyNLFilters,
   };
 }
 
