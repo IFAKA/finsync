@@ -7,6 +7,7 @@ import {
   useTransactionMutations,
   useRuleMutations,
   useFindSimilarTransactions,
+  useCategories,
   type LocalTransaction,
 } from "@/lib/hooks/db";
 
@@ -14,6 +15,19 @@ interface RecentlyCategorized {
   transaction: LocalTransaction;
   categoryId: string;
   similarCount: number;
+}
+
+// Check if Income category is being assigned to a rule that only matches negative amounts
+function isInvalidIncomeRule(
+  categoryId: string | undefined,
+  categories: { id: string; name: string }[],
+  amountEquals?: number,
+  amountMax?: number
+): boolean {
+  if (!categoryId) return false;
+  const category = categories.find((c) => c.id === categoryId);
+  if (category?.name !== "Income") return false;
+  return (amountEquals != null && amountEquals < 0) || (amountMax != null && amountMax < 0);
 }
 
 export function useSimilarTransactionFlow() {
@@ -24,6 +38,7 @@ export function useSimilarTransactionFlow() {
   const { update: updateTransaction, bulkUpdate, revertBulkUpdate } = useTransactionMutations();
   const { create: createRule, update: updateRule, remove: deleteRule } = useRuleMutations();
   const { findSimilar } = useFindSimilarTransactions();
+  const { data: categories } = useCategories();
 
   const handleCategoryChange = useCallback(
     async (transaction: LocalTransaction, newCategoryId: string) => {
@@ -76,6 +91,12 @@ export function useSimilarTransactionFlow() {
       },
       matchingTransactionIds: string[]
     ) => {
+      // Validate Income category assignment
+      if (isInvalidIncomeRule(criteria.categoryId, categories, criteria.amountEquals, criteria.amountMax)) {
+        toast.warning("Income category is for positive amounts (money received)");
+        return;
+      }
+
       try {
         // Include the original transaction in the bulk update
         const allIds = recentlyCategorized
@@ -129,7 +150,7 @@ export function useSimilarTransactionFlow() {
         playSound("error");
       }
     },
-    [recentlyCategorized, bulkUpdate, createRule, revertBulkUpdate, deleteRule]
+    [recentlyCategorized, bulkUpdate, createRule, revertBulkUpdate, deleteRule, categories]
   );
 
   const handlePillClick = useCallback(() => {
@@ -162,9 +183,18 @@ export function useSimilarTransactionFlow() {
         displayName: string;
         descriptionContains: string;
         categoryId?: string;
+        amountEquals?: number;
+        amountMin?: number;
+        amountMax?: number;
       },
       matchingTransactionIds: string[]
     ) => {
+      // Validate Income category assignment
+      if (isInvalidIncomeRule(criteria.categoryId, categories, criteria.amountEquals, criteria.amountMax)) {
+        toast.warning("Income category is for positive amounts (money received)");
+        return;
+      }
+
       try {
         // If category is specified, also update transactions
         let previousStates: { id: string; previousCategoryId?: string }[] = [];
@@ -180,6 +210,9 @@ export function useSimilarTransactionFlow() {
           displayName: criteria.displayName,
           descriptionContains: criteria.descriptionContains,
           categoryId: criteria.categoryId,
+          amountEquals: criteria.amountEquals,
+          amountMin: criteria.amountMin,
+          amountMax: criteria.amountMax,
           priority: 0,
           isEnabled: true,
         });
@@ -217,7 +250,7 @@ export function useSimilarTransactionFlow() {
         playSound("error");
       }
     },
-    [bulkUpdate, createRule, revertBulkUpdate, deleteRule]
+    [bulkUpdate, createRule, revertBulkUpdate, deleteRule, categories]
   );
 
   const handleUpdateAlias = useCallback(
@@ -227,9 +260,18 @@ export function useSimilarTransactionFlow() {
         displayName: string;
         descriptionContains: string;
         categoryId?: string;
+        amountEquals?: number;
+        amountMin?: number;
+        amountMax?: number;
       },
       matchingTransactionIds: string[]
     ) => {
+      // Validate Income category assignment
+      if (isInvalidIncomeRule(criteria.categoryId, categories, criteria.amountEquals, criteria.amountMax)) {
+        toast.warning("Income category is for positive amounts (money received)");
+        return;
+      }
+
       try {
         // If category is specified, also update transactions
         if (criteria.categoryId) {
@@ -243,6 +285,9 @@ export function useSimilarTransactionFlow() {
           displayName: criteria.displayName,
           descriptionContains: criteria.descriptionContains,
           categoryId: criteria.categoryId,
+          amountEquals: criteria.amountEquals,
+          amountMin: criteria.amountMin,
+          amountMax: criteria.amountMax,
         });
 
         playSound("complete");
@@ -252,7 +297,7 @@ export function useSimilarTransactionFlow() {
         playSound("error");
       }
     },
-    [bulkUpdate, updateRule]
+    [bulkUpdate, updateRule, categories]
   );
 
   return {

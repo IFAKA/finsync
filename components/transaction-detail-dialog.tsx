@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getDisplayName, findMatchingAliasRule } from "@/lib/utils/display-name";
 import type { LocalCategory, LocalTransaction, LocalRule } from "@/lib/hooks/db";
@@ -42,6 +43,9 @@ interface TransactionDetailDialogProps {
       displayName: string;
       descriptionContains: string;
       categoryId?: string;
+      amountEquals?: number;
+      amountMin?: number;
+      amountMax?: number;
     },
     matchingTransactionIds: string[]
   ) => void;
@@ -51,6 +55,9 @@ interface TransactionDetailDialogProps {
       displayName: string;
       descriptionContains: string;
       categoryId?: string;
+      amountEquals?: number;
+      amountMin?: number;
+      amountMax?: number;
     },
     matchingTransactionIds: string[]
   ) => void;
@@ -161,6 +168,11 @@ export function TransactionDetailDialog({
                     value={transaction.categoryId || ""}
                     onValueChange={(value) => {
                       if (value) {
+                        const selectedCategory = categories.find((c) => c.id === value);
+                        if (selectedCategory?.name === "Income" && transaction.amount < 0) {
+                          toast.warning("Income category is for positive amounts (money received)");
+                          return;
+                        }
                         onCategoryChange(transaction, value);
                       }
                     }}

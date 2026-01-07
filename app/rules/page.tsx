@@ -43,6 +43,20 @@ export default function RulesPage() {
     },
     _matchingTransactionIds: string[]
   ) => {
+    // Check if assigning Income to a rule that only matches negative amounts
+    if (criteria.categoryId) {
+      const selectedCategory = categories.find((c) => c.id === criteria.categoryId);
+      if (selectedCategory?.name === "Income") {
+        const onlyMatchesNegative =
+          (criteria.amountEquals != null && criteria.amountEquals < 0) ||
+          (criteria.amountMax != null && criteria.amountMax < 0);
+        if (onlyMatchesNegative) {
+          toast.warning("Income category is for positive amounts (money received)");
+          return;
+        }
+      }
+    }
+
     try {
       if (editingRule) {
         await updateRule(editingRule.id, {

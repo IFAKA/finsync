@@ -37,6 +37,9 @@ export interface CreateAliasModalProps {
     displayName?: string;
     descriptionContains?: string;
     categoryId?: string;
+    amountEquals?: number;
+    amountMin?: number;
+    amountMax?: number;
   };
   onSave: (
     criteria: {
@@ -44,6 +47,9 @@ export interface CreateAliasModalProps {
       displayName: string;
       descriptionContains: string;
       categoryId?: string;
+      amountEquals?: number;
+      amountMin?: number;
+      amountMax?: number;
     },
     matchingTransactionIds: string[]
   ) => void;
@@ -53,6 +59,9 @@ export interface CreateAliasModalProps {
       displayName: string;
       descriptionContains: string;
       categoryId?: string;
+      amountEquals?: number;
+      amountMin?: number;
+      amountMax?: number;
     },
     matchingTransactionIds: string[]
   ) => void;
@@ -62,6 +71,9 @@ interface AliasCriteria {
   displayName: string;
   pattern: string;
   categoryId: string;
+  amountEquals: string;
+  amountMin: string;
+  amountMax: string;
 }
 
 function extractPattern(description: string): string {
@@ -95,6 +107,9 @@ export function CreateAliasModal({
     displayName: "",
     pattern: "",
     categoryId: "",
+    amountEquals: "",
+    amountMin: "",
+    amountMax: "",
   });
   const [matchingTransactions, setMatchingTransactions] = useState<LocalTransaction[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -109,6 +124,9 @@ export function CreateAliasModal({
           displayName: existingRule.displayName || "",
           pattern: existingRule.descriptionContains || "",
           categoryId: existingRule.categoryId || "",
+          amountEquals: existingRule.amountEquals?.toString() || "",
+          amountMin: existingRule.amountMin?.toString() || "",
+          amountMax: existingRule.amountMax?.toString() || "",
         });
       } else {
         // Creating new alias
@@ -117,6 +135,9 @@ export function CreateAliasModal({
           displayName: "",
           pattern: extractPattern(desc),
           categoryId: transaction.categoryId || "",
+          amountEquals: "",
+          amountMin: "",
+          amountMax: "",
         });
       }
       setStep(0);
@@ -124,26 +145,45 @@ export function CreateAliasModal({
     }
   }, [open, transaction, existingRule]);
 
-  // Search for matching transactions when pattern changes
+  // Search for matching transactions when criteria changes
   const searchMatches = useCallback(async () => {
-    if (!criteria.pattern) {
+    // Need at least description or an amount condition
+    const hasAmountCondition = criteria.amountEquals || criteria.amountMin || criteria.amountMax;
+    if (!criteria.pattern && !hasAmountCondition) {
       setMatchingTransactions([]);
       return;
     }
 
     setIsSearching(true);
     try {
-      const matches = await findSimilar(
-        { descriptionContains: criteria.pattern },
-        transaction?.id
-      );
+      const searchCriteria: {
+        descriptionContains?: string;
+        amountEquals?: number;
+        amountMin?: number;
+        amountMax?: number;
+      } = {};
+
+      if (criteria.pattern) {
+        searchCriteria.descriptionContains = criteria.pattern;
+      }
+      if (criteria.amountEquals) {
+        searchCriteria.amountEquals = parseFloat(criteria.amountEquals);
+      }
+      if (criteria.amountMin) {
+        searchCriteria.amountMin = parseFloat(criteria.amountMin);
+      }
+      if (criteria.amountMax) {
+        searchCriteria.amountMax = parseFloat(criteria.amountMax);
+      }
+
+      const matches = await findSimilar(searchCriteria, transaction?.id);
       setMatchingTransactions(matches);
     } catch (error) {
       console.error("Error searching matches:", error);
       setMatchingTransactions([]);
     }
     setIsSearching(false);
-  }, [criteria.pattern, findSimilar, transaction?.id]);
+  }, [criteria.pattern, criteria.amountEquals, criteria.amountMin, criteria.amountMax, findSimilar, transaction?.id]);
 
   // Debounced search
   useEffect(() => {
@@ -156,7 +196,8 @@ export function CreateAliasModal({
     setCriteria((prev) => ({ ...prev, ...updates }));
   }, []);
 
-  const canProceed = criteria.displayName.trim() && criteria.pattern.trim();
+  const hasCondition = criteria.pattern.trim() || criteria.amountEquals || criteria.amountMin || criteria.amountMax;
+  const canProceed = criteria.displayName.trim() && hasCondition;
   const totalCount = matchingTransactions.length + 1; // +1 for the current transaction
 
   const getCategoryName = (categoryId?: string): string => {
@@ -168,6 +209,10 @@ export function CreateAliasModal({
   const handleSave = () => {
     const matchingIds = [transaction.id, ...matchingTransactions.map((t) => t.id)];
 
+    const amountEquals = criteria.amountEquals ? parseFloat(criteria.amountEquals) : undefined;
+    const amountMin = criteria.amountMin ? parseFloat(criteria.amountMin) : undefined;
+    const amountMax = criteria.amountMax ? parseFloat(criteria.amountMax) : undefined;
+
     if (isEditing && existingRule && onUpdate) {
       onUpdate(
         existingRule.id,
@@ -175,6 +220,9 @@ export function CreateAliasModal({
           displayName: criteria.displayName.trim(),
           descriptionContains: criteria.pattern.trim(),
           categoryId: criteria.categoryId || undefined,
+          amountEquals,
+          amountMin,
+          amountMax,
         },
         matchingIds
       );
@@ -185,6 +233,9 @@ export function CreateAliasModal({
           displayName: criteria.displayName.trim(),
           descriptionContains: criteria.pattern.trim(),
           categoryId: criteria.categoryId || undefined,
+          amountEquals,
+          amountMin,
+          amountMax,
         },
         matchingIds
       );
@@ -216,6 +267,39 @@ export function CreateAliasModal({
           onChange={(e) => updateCriteria({ pattern: e.target.value })}
           placeholder="e.g., san miguel"
         />
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Amount conditions (optional)</label>
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            type="number"
+            step="0.01"
+            value={criteria.amountEquals}
+            onChange={(e) => updateCriteria({ amountEquals: e.target.value, amountMin: "", amountMax: "" })}
+            placeholder="Exact amount"
+            disabled={!!criteria.amountMin || !!criteria.amountMax}
+          />
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              step="0.01"
+              value={criteria.amountMin}
+              onChange={(e) => updateCriteria({ amountMin: e.target.value, amountEquals: "" })}
+              placeholder="Min"
+              disabled={!!criteria.amountEquals}
+            />
+            <span className="text-muted-foreground">-</span>
+            <Input
+              type="number"
+              step="0.01"
+              value={criteria.amountMax}
+              onChange={(e) => updateCriteria({ amountMax: e.target.value, amountEquals: "" })}
+              placeholder="Max"
+              disabled={!!criteria.amountEquals}
+            />
+          </div>
+        </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {isSearching ? (
             <Loader2 className="w-3 h-3 animate-spin" />
@@ -414,6 +498,39 @@ export function CreateAliasModal({
               onChange={(e) => updateCriteria({ pattern: e.target.value })}
               placeholder="e.g., san miguel"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Amount conditions (optional)</label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="number"
+                step="0.01"
+                value={criteria.amountEquals}
+                onChange={(e) => updateCriteria({ amountEquals: e.target.value, amountMin: "", amountMax: "" })}
+                placeholder="Exact amount"
+                disabled={!!criteria.amountMin || !!criteria.amountMax}
+              />
+              <div className="flex items-center gap-1">
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={criteria.amountMin}
+                  onChange={(e) => updateCriteria({ amountMin: e.target.value, amountEquals: "" })}
+                  placeholder="Min"
+                  disabled={!!criteria.amountEquals}
+                />
+                <span className="text-muted-foreground">-</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={criteria.amountMax}
+                  onChange={(e) => updateCriteria({ amountMax: e.target.value, amountEquals: "" })}
+                  placeholder="Max"
+                  disabled={!!criteria.amountEquals}
+                />
+              </div>
+            </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {isSearching ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
