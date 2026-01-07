@@ -188,6 +188,7 @@ export function BentoMobileDashboard({
         insight={aiInsights.insight}
         isLoading={aiInsights.isLoading}
         isModelLoading={aiInsights.isModelLoading}
+        error={aiInsights.error}
       />
 
       <motion.div

@@ -153,14 +153,17 @@ export function AIInsightsCompact({
   insight,
   isLoading,
   isModelLoading,
+  error,
   className,
 }: {
   insight: string | null;
   isLoading: boolean;
   isModelLoading: boolean;
+  error?: string | null;
   className?: string;
 }) {
-  if (!insight && !isLoading && !isModelLoading) {
+  // Don't show if nothing to display (no insight, not loading, no error)
+  if (!insight && !isLoading && !isModelLoading && !error) {
     return null;
   }
 
@@ -206,6 +209,16 @@ export function AIInsightsCompact({
               className="text-xs text-muted-foreground"
             >
               {isModelLoading ? "Loading AI..." : "Generating..."}
+            </motion.p>
+          ) : error ? (
+            <motion.p
+              key="error-text"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-xs text-muted-foreground"
+            >
+              {error}
             </motion.p>
           ) : insight ? (
             <motion.p
