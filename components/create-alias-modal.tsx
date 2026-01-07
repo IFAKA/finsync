@@ -462,7 +462,7 @@ export function CreateAliasModal({
         </div>
       </div>
 
-      <div className="flex justify-end gap-2 p-6 pt-0 border-t mt-4">
+      <div className="flex justify-end gap-2 p-6 border-t mt-4">
         <Button variant="secondary" onClick={() => onOpenChange(false)}>
           Cancel
         </Button>
