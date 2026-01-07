@@ -58,6 +58,8 @@ export function useAIInsights({
   // Track if generation is in progress to prevent duplicate calls
   const generatingRef = useRef(false);
   const lastMonthRef = useRef<string | null>(null);
+  // Track if component is mounted to avoid setting state after unmount
+  const mountedRef = useRef(true);
 
   // Build cache key - only regenerate if month or totals change
   const cacheKey = selectedMonth && selectedMonth !== "all"
@@ -90,6 +92,9 @@ export function useAIInsights({
 
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
+    // Store the cacheKey we're generating for to check later
+    const generatingForKey = cacheKey;
+
     try {
       // Build spending data
       const categoryData = summary.byCategory.map((c) => {
@@ -115,6 +120,9 @@ export function useAIInsights({
       const monthLabel = formatMonth(selectedMonth, { month: "long", year: "numeric" });
 
       const onProgress: LoadingCallback = (progress) => {
+        // Don't update state if unmounted
+        if (!mountedRef.current) return;
+
         if (progress.stage === "downloading" || progress.stage === "loading") {
           setState((prev) => ({
             ...prev,
@@ -136,26 +144,32 @@ export function useAIInsights({
         onProgress
       );
 
-      // Cache the result
-      if (cacheKey) {
-        insightsCache.set(cacheKey, insight);
+      // Cache the result (always cache even if unmounted - it's still valid)
+      if (generatingForKey) {
+        insightsCache.set(generatingForKey, insight);
       }
 
-      setState({
-        insight,
-        isLoading: false,
-        isModelLoading: false,
-        modelProgress: "",
-        error: null,
-      });
+      // Only update state if still mounted
+      if (mountedRef.current) {
+        setState({
+          insight,
+          isLoading: false,
+          isModelLoading: false,
+          modelProgress: "",
+          error: null,
+        });
+      }
     } catch (error) {
       console.error("[AIInsights] Failed to generate:", error);
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        isModelLoading: false,
-        error: "Failed to generate insight",
-      }));
+      // Only update state if still mounted
+      if (mountedRef.current) {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          isModelLoading: false,
+          error: "Failed to generate insight",
+        }));
+      }
     } finally {
       generatingRef.current = false;
     }
@@ -168,6 +182,14 @@ export function useAIInsights({
     budgetTotal,
     previousMonthSummary,
   ]);
+
+  // Track mounted state
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Check cache on mount and when cacheKey changes
   useEffect(() => {
@@ -185,7 +207,7 @@ export function useAIInsights({
         isLoading: false,
         error: null,
       }));
-      lastMonthRef.current = selectedMonth;
+      lastMonthRef.current = cacheKey;
       return;
     }
 
@@ -194,7 +216,7 @@ export function useAIInsights({
       lastMonthRef.current = cacheKey;
       generateInsight();
     }
-  }, [cacheKey, selectedMonth, summary.expenses, generateInsight]);
+  }, [cacheKey, summary.expenses, generateInsight]);
 
   const regenerate = useCallback(() => {
     if (cacheKey) {
