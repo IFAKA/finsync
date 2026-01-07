@@ -2,6 +2,7 @@
 
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { LocalTransaction } from "@/lib/hooks/db";
+import { Loader2 } from "lucide-react";
 
 interface RulePreviewStepProps {
   matchingTransactions: LocalTransaction[];
@@ -40,27 +41,35 @@ export function RulePreviewStep({
       )}
 
       <div className={`space-y-1 ${maxHeight} overflow-y-auto`}>
-        {prefillTransaction && (
-          <TransactionPreviewRow
-            transaction={prefillTransaction}
-            variant={variant}
-            highlighted
-          />
-        )}
-        {(isMobile ? matchingTransactions : matchingTransactions.slice(0, 10)).map((tx) => (
-          <TransactionPreviewRow key={tx.id} transaction={tx} variant={variant} />
-        ))}
-        {!isMobile && matchingTransactions.length > 10 && (
-          <p className="text-xs text-muted-foreground text-center py-2">
-            +{matchingTransactions.length - 10} more
-          </p>
-        )}
-        {matchingTransactions.length === 0 && !prefillTransaction && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            {hasConditions
-              ? `No matching transactions${isMobile ? " found" : ""}`
-              : "Enter conditions to see matches"}
-          </p>
+        {isSearching && hasConditions ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            {prefillTransaction && (
+              <TransactionPreviewRow
+                transaction={prefillTransaction}
+                variant={variant}
+                highlighted
+              />
+            )}
+            {(isMobile ? matchingTransactions : matchingTransactions.slice(0, 10)).map((tx) => (
+              <TransactionPreviewRow key={tx.id} transaction={tx} variant={variant} />
+            ))}
+            {!isMobile && matchingTransactions.length > 10 && (
+              <p className="text-xs text-muted-foreground text-center py-2">
+                +{matchingTransactions.length - 10} more
+              </p>
+            )}
+            {matchingTransactions.length === 0 && !prefillTransaction && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                {hasConditions
+                  ? `No matching transactions${isMobile ? " found" : ""}`
+                  : "Enter conditions to see matches"}
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>
