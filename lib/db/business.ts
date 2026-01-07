@@ -78,17 +78,20 @@ export async function findSimilarTransactions(
       if (!matchesDesc) return false;
     }
 
+    // Use absolute value for amount comparisons (expenses are negative)
+    const absAmount = Math.abs(tx.amount);
+
     // Amount equals (with small tolerance for floating point)
     if (criteria.amountEquals != null) {
-      if (Math.abs(tx.amount - criteria.amountEquals) > 0.01) return false;
+      if (Math.abs(absAmount - criteria.amountEquals) > 0.01) return false;
     }
 
     // Amount range
     if (criteria.amountMin != null) {
-      if (tx.amount < criteria.amountMin) return false;
+      if (absAmount < criteria.amountMin) return false;
     }
     if (criteria.amountMax != null) {
-      if (tx.amount > criteria.amountMax) return false;
+      if (absAmount > criteria.amountMax) return false;
     }
 
     return true;
