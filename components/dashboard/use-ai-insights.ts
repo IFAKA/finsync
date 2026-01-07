@@ -37,7 +37,34 @@ interface AIInsightsState {
 }
 
 // Cache insights by month to avoid re-generating
-const insightsCache = new Map<string, string>();
+// Persisted to localStorage to survive page reloads
+const CACHE_KEY = "ai-insights-cache";
+
+function loadCache(): Map<string, string> {
+  if (typeof window === "undefined") return new Map();
+  try {
+    const stored = localStorage.getItem(CACHE_KEY);
+    if (stored) {
+      return new Map(JSON.parse(stored));
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return new Map();
+}
+
+function saveCache(cache: Map<string, string>) {
+  if (typeof window === "undefined") return;
+  try {
+    // Keep only last 12 entries to avoid bloating localStorage
+    const entries = Array.from(cache.entries()).slice(-12);
+    localStorage.setItem(CACHE_KEY, JSON.stringify(entries));
+  } catch {
+    // Ignore quota errors
+  }
+}
+
+const insightsCache = loadCache();
 
 export function useAIInsights({
   summary,
@@ -147,6 +174,7 @@ export function useAIInsights({
       // Cache the result (always cache even if unmounted - it's still valid)
       if (generatingForKey) {
         insightsCache.set(generatingForKey, insight);
+        saveCache(insightsCache);
       }
 
       // Only update state if still mounted
