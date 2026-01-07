@@ -181,7 +181,7 @@ export function CreateAliasModal({
     } else {
       onSave(
         {
-          name: `Alias: ${criteria.displayName}`,
+          name: criteria.displayName.trim(),
           displayName: criteria.displayName.trim(),
           descriptionContains: criteria.pattern.trim(),
           categoryId: criteria.categoryId || undefined,
