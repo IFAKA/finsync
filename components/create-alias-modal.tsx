@@ -32,9 +32,24 @@ export interface CreateAliasModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   transaction: LocalTransaction;
+  existingRule?: {
+    id: string;
+    displayName?: string;
+    descriptionContains?: string;
+    categoryId?: string;
+  };
   onSave: (
     criteria: {
       name: string;
+      displayName: string;
+      descriptionContains: string;
+      categoryId?: string;
+    },
+    matchingTransactionIds: string[]
+  ) => void;
+  onUpdate?: (
+    ruleId: string,
+    criteria: {
       displayName: string;
       descriptionContains: string;
       categoryId?: string;
@@ -66,8 +81,11 @@ export function CreateAliasModal({
   open,
   onOpenChange,
   transaction,
+  existingRule,
   onSave,
+  onUpdate,
 }: CreateAliasModalProps) {
+  const isEditing = !!existingRule;
   const isMobile = useIsMobile();
   const { data: categories } = useCategories();
   const { findSimilar } = useFindSimilarTransactions();
@@ -85,16 +103,26 @@ export function CreateAliasModal({
   // Initialize form when transaction changes
   useEffect(() => {
     if (open && transaction) {
-      const desc = transaction.rawDescription || transaction.description;
-      setCriteria({
-        displayName: "",
-        pattern: extractPattern(desc),
-        categoryId: transaction.categoryId || "",
-      });
+      if (existingRule) {
+        // Editing existing alias - pre-fill from rule
+        setCriteria({
+          displayName: existingRule.displayName || "",
+          pattern: existingRule.descriptionContains || "",
+          categoryId: existingRule.categoryId || "",
+        });
+      } else {
+        // Creating new alias
+        const desc = transaction.rawDescription || transaction.description;
+        setCriteria({
+          displayName: "",
+          pattern: extractPattern(desc),
+          categoryId: transaction.categoryId || "",
+        });
+      }
       setStep(0);
       setMatchingTransactions([]);
     }
-  }, [open, transaction]);
+  }, [open, transaction, existingRule]);
 
   // Search for matching transactions when pattern changes
   const searchMatches = useCallback(async () => {
@@ -139,15 +167,28 @@ export function CreateAliasModal({
 
   const handleSave = () => {
     const matchingIds = [transaction.id, ...matchingTransactions.map((t) => t.id)];
-    onSave(
-      {
-        name: `Alias: ${criteria.displayName}`,
-        displayName: criteria.displayName.trim(),
-        descriptionContains: criteria.pattern.trim(),
-        categoryId: criteria.categoryId || undefined,
-      },
-      matchingIds
-    );
+
+    if (isEditing && existingRule && onUpdate) {
+      onUpdate(
+        existingRule.id,
+        {
+          displayName: criteria.displayName.trim(),
+          descriptionContains: criteria.pattern.trim(),
+          categoryId: criteria.categoryId || undefined,
+        },
+        matchingIds
+      );
+    } else {
+      onSave(
+        {
+          name: `Alias: ${criteria.displayName}`,
+          displayName: criteria.displayName.trim(),
+          descriptionContains: criteria.pattern.trim(),
+          categoryId: criteria.categoryId || undefined,
+        },
+        matchingIds
+      );
+    }
   };
 
   const FormContent = ({ variant }: { variant: "mobile" | "desktop" }) => (
@@ -280,7 +321,7 @@ export function CreateAliasModal({
               exit={{ opacity: 0, x: -20 }}
             >
               <ResponsiveModalHeader>
-                <ResponsiveModalTitle>Rename Transaction</ResponsiveModalTitle>
+                <ResponsiveModalTitle>{isEditing ? "Edit Alias" : "Rename Transaction"}</ResponsiveModalTitle>
               </ResponsiveModalHeader>
 
               <ResponsiveModalBody className="p-4">
@@ -345,7 +386,7 @@ export function CreateAliasModal({
       }}
     >
       <ResponsiveModalHeader>
-        <ResponsiveModalTitle>Rename Transaction</ResponsiveModalTitle>
+        <ResponsiveModalTitle>{isEditing ? "Edit Alias" : "Rename Transaction"}</ResponsiveModalTitle>
       </ResponsiveModalHeader>
 
       <div className="grid grid-cols-2 gap-6 p-6">

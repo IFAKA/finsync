@@ -204,6 +204,7 @@ function TransactionsContent() {
         onCreateRule={similarFlow.handlePillClick}
         onDismissSimilar={similarFlow.handlePillDismiss}
         onCreateAlias={similarFlow.handleCreateAlias}
+        onUpdateAlias={similarFlow.handleUpdateAlias}
       />
     </div>
   );

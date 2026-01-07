@@ -23,6 +23,7 @@ export default function RulesPage() {
   const [newRule, setNewRule] = useState({
     name: "",
     categoryId: "",
+    displayName: "",
     amountEquals: "",
     amountMin: "",
     amountMax: "",
@@ -34,8 +35,13 @@ export default function RulesPage() {
   const { create: createRule, update: updateRule, remove: deleteRule } = useRuleMutations();
 
   const handleCreate = async () => {
-    if (!newRule.name || !newRule.categoryId) {
-      toast.error("Name and category are required");
+    if (!newRule.name) {
+      toast.error("Name is required");
+      return;
+    }
+
+    if (!newRule.categoryId && !newRule.displayName) {
+      toast.error("Category or display name is required");
       return;
     }
 
@@ -47,7 +53,8 @@ export default function RulesPage() {
     try {
       await createRule({
         name: newRule.name,
-        categoryId: newRule.categoryId,
+        categoryId: newRule.categoryId || undefined,
+        displayName: newRule.displayName || undefined,
         amountEquals: newRule.amountEquals ? parseFloat(newRule.amountEquals) : undefined,
         amountMin: newRule.amountMin ? parseFloat(newRule.amountMin) : undefined,
         amountMax: newRule.amountMax ? parseFloat(newRule.amountMax) : undefined,
@@ -58,7 +65,7 @@ export default function RulesPage() {
       toast.success("Rule created");
       playSound("complete");
       setIsCreating(false);
-      setNewRule({ name: "", categoryId: "", amountEquals: "", amountMin: "", amountMax: "", descriptionContains: "" });
+      setNewRule({ name: "", categoryId: "", displayName: "", amountEquals: "", amountMin: "", amountMax: "", descriptionContains: "" });
     } catch {
       toast.error("Failed to create rule");
       playSound("error");
@@ -140,15 +147,15 @@ export default function RulesPage() {
           <ResponsiveModalTitle>New Rule</ResponsiveModalTitle>
         </ResponsiveModalHeader>
         <div className="space-y-4 p-4 sm:p-0">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Rule Name</label>
+            <Input
+              placeholder="e.g., Monthly Rent"
+              value={newRule.name}
+              onChange={(e) => setNewRule({ ...newRule, name: e.target.value })}
+            />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Rule Name</label>
-              <Input
-                placeholder="e.g., Monthly Rent"
-                value={newRule.name}
-                onChange={(e) => setNewRule({ ...newRule, name: e.target.value })}
-              />
-            </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Category</label>
               <select
@@ -156,13 +163,22 @@ export default function RulesPage() {
                 value={newRule.categoryId}
                 onChange={(e) => setNewRule({ ...newRule, categoryId: e.target.value })}
               >
-                <option value="">Select category...</option>
+                <option value="">No category change</option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
             </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Display As</label>
+              <Input
+                placeholder="e.g., Rent"
+                value={newRule.displayName}
+                onChange={(e) => setNewRule({ ...newRule, displayName: e.target.value })}
+              />
+            </div>
           </div>
+          <p className="text-xs text-muted-foreground">Set a category, display name, or both</p>
           <div className="border-t pt-4">
             <p className="text-sm font-medium mb-3">Conditions (at least one)</p>
             <div className="grid grid-cols-2 gap-3">

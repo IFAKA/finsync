@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { getDisplayName } from "@/lib/utils/display-name";
+import { getDisplayName, findMatchingAliasRule } from "@/lib/utils/display-name";
 import type { LocalCategory, LocalTransaction, LocalRule } from "@/lib/hooks/db";
 import { CreateAliasModal } from "./create-alias-modal";
 
@@ -45,6 +45,15 @@ interface TransactionDetailDialogProps {
     },
     matchingTransactionIds: string[]
   ) => void;
+  onUpdateAlias?: (
+    ruleId: string,
+    criteria: {
+      displayName: string;
+      descriptionContains: string;
+      categoryId?: string;
+    },
+    matchingTransactionIds: string[]
+  ) => void;
 }
 
 export function TransactionDetailDialog({
@@ -58,6 +67,7 @@ export function TransactionDetailDialog({
   onCreateRule,
   onDismissSimilar,
   onCreateAlias,
+  onUpdateAlias,
 }: TransactionDetailDialogProps) {
   const [showAliasModal, setShowAliasModal] = useState(false);
 
@@ -67,6 +77,7 @@ export function TransactionDetailDialog({
   const showSimilarPrompt = similarTransactionsInfo?.transactionId === transaction.id;
   const displayName = getDisplayName(transaction, rules);
   const hasAlias = displayName !== transaction.description;
+  const existingAliasRule = findMatchingAliasRule(transaction, rules);
 
   return (
     <>
@@ -244,10 +255,15 @@ export function TransactionDetailDialog({
           open={showAliasModal}
           onOpenChange={setShowAliasModal}
           transaction={transaction}
+          existingRule={existingAliasRule}
           onSave={(criteria, matchingIds) => {
             onCreateAlias(criteria, matchingIds);
             setShowAliasModal(false);
           }}
+          onUpdate={onUpdateAlias ? (ruleId, criteria, matchingIds) => {
+            onUpdateAlias(ruleId, criteria, matchingIds);
+            setShowAliasModal(false);
+          } : undefined}
         />
       )}
     </>

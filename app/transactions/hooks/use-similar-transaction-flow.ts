@@ -22,7 +22,7 @@ export function useSimilarTransactionFlow() {
   const pillTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { update: updateTransaction, bulkUpdate, revertBulkUpdate } = useTransactionMutations();
-  const { create: createRule, remove: deleteRule } = useRuleMutations();
+  const { create: createRule, update: updateRule, remove: deleteRule } = useRuleMutations();
   const { findSimilar } = useFindSimilarTransactions();
 
   const handleCategoryChange = useCallback(
@@ -216,12 +216,48 @@ export function useSimilarTransactionFlow() {
     [bulkUpdate, createRule, revertBulkUpdate, deleteRule]
   );
 
+  const handleUpdateAlias = useCallback(
+    async (
+      ruleId: string,
+      criteria: {
+        displayName: string;
+        descriptionContains: string;
+        categoryId?: string;
+      },
+      matchingTransactionIds: string[]
+    ) => {
+      try {
+        // If category is specified, also update transactions
+        if (criteria.categoryId) {
+          await bulkUpdate(matchingTransactionIds, {
+            categoryId: criteria.categoryId,
+          });
+        }
+
+        // Update the alias rule
+        await updateRule(ruleId, {
+          displayName: criteria.displayName,
+          descriptionContains: criteria.descriptionContains,
+          categoryId: criteria.categoryId,
+        });
+
+        playSound("complete");
+        toast.success("Alias updated");
+      } catch {
+        toast.error("Failed to update alias");
+        playSound("error");
+      }
+    },
+    [bulkUpdate, updateRule]
+  );
+
   return {
     recentlyCategorized,
     showCreateRuleModal,
     handleCategoryChange,
     handleCreateRuleSave,
     handleCreateAlias,
+    handleUpdateAlias,
     handlePillClick,
     handlePillDismiss,
     handleModalClose,
