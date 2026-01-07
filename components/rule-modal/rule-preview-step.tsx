@@ -10,6 +10,7 @@ interface RulePreviewStepProps {
   isSearching: boolean;
   totalCount: number;
   variant: "mobile" | "desktop";
+  hasConditions?: boolean;
 }
 
 export function RulePreviewStep({
@@ -19,6 +20,7 @@ export function RulePreviewStep({
   isSearching,
   totalCount,
   variant,
+  hasConditions = true,
 }: RulePreviewStepProps) {
   const isMobile = variant === "mobile";
   const maxHeight = isMobile ? "max-h-[40vh]" : "max-h-[300px]";
@@ -55,7 +57,9 @@ export function RulePreviewStep({
         )}
         {matchingTransactions.length === 0 && !prefillTransaction && (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No matching transactions{isMobile ? " found" : ""}
+            {hasConditions
+              ? `No matching transactions${isMobile ? " found" : ""}`
+              : "Enter conditions to see matches"}
           </p>
         )}
       </div>

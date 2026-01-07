@@ -126,10 +126,14 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
     setCriteria((prev) => ({ ...prev, ...updates }));
   }, []);
 
+  const hasConditions = !!(
+    criteria.descriptionContains || criteria.amountEquals || criteria.amountMin || criteria.amountMax
+  );
+
   const canProceed =
     criteria.name &&
     (criteria.categoryId || criteria.displayName) &&
-    (criteria.descriptionContains || criteria.amountEquals || criteria.amountMin || criteria.amountMax);
+    hasConditions;
 
   const totalCount = matchingTransactions.length + (prefillTransaction ? 1 : 0);
 
@@ -176,6 +180,7 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
     matchingTransactions,
     isSearching,
     canProceed,
+    hasConditions,
     totalCount,
     buildRuleCriteria,
   };

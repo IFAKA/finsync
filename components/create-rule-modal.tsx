@@ -63,6 +63,7 @@ export function CreateRuleModal({
     matchingTransactions,
     isSearching,
     canProceed,
+    hasConditions,
     totalCount,
     buildRuleCriteria,
   } = useRuleForm({ open, prefillTransaction, prefillCategoryId, initialRule: editingRule });
@@ -149,6 +150,7 @@ export function CreateRuleModal({
                   isSearching={isSearching}
                   totalCount={totalCount}
                   variant="mobile"
+                  hasConditions={hasConditions}
                 />
               </ResponsiveModalBody>
 
@@ -192,6 +194,7 @@ export function CreateRuleModal({
             isSearching={isSearching}
             totalCount={totalCount}
             variant="desktop"
+            hasConditions={hasConditions}
           />
         </div>
       </div>
