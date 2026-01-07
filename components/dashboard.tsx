@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { useTransactionMutations } from "@/lib/hooks/db";
+import { useTransactionMutations, useRules } from "@/lib/hooks/db";
 import { playSound } from "@/lib/sounds";
 import {
   BentoMobileDashboard,
@@ -31,6 +31,7 @@ export function Dashboard({ onUploadClick }: DashboardProps) {
     budgetTotal,
   } = useDashboardData();
 
+  const { data: rules } = useRules();
   const { update: updateTransaction } = useTransactionMutations();
 
   const handleCategoryChange = async (transactionId: string, categoryId: string) => {
@@ -88,6 +89,7 @@ export function Dashboard({ onUploadClick }: DashboardProps) {
         chartData={chartData}
         attentionCount={attentionCount}
         onCategoryChange={handleCategoryChange}
+        rules={rules}
       />
     </div>
   );

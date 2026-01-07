@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { getDisplayName } from "@/lib/utils/display-name";
 import { SpendingBarChart } from "@/components/spending-chart";
 import {
   AnimatedNumber,
@@ -28,7 +29,7 @@ import {
 } from "@/components/motion";
 import { playSound } from "@/lib/sounds";
 import { MonthNavigator } from "@/components/month-navigator";
-import type { LocalCategory, LocalTransaction } from "@/lib/hooks/db";
+import type { LocalCategory, LocalTransaction, LocalRule } from "@/lib/hooks/db";
 import { getCategoryInfo } from "./use-dashboard-data";
 
 interface DesktopDashboardProps {
@@ -53,6 +54,7 @@ interface DesktopDashboardProps {
   }>;
   attentionCount: number;
   onCategoryChange: (transactionId: string, categoryId: string) => void;
+  rules: LocalRule[];
 }
 
 export function DesktopDashboard({
@@ -66,6 +68,7 @@ export function DesktopDashboard({
   chartData,
   attentionCount,
   onCategoryChange,
+  rules,
 }: DesktopDashboardProps) {
   const router = useRouter();
 
@@ -187,7 +190,7 @@ export function DesktopDashboard({
                             className="w-1.5 h-1.5 rounded-full shrink-0"
                             style={{ backgroundColor: cat?.color || "#888" }}
                           />
-                          <span className="text-sm truncate">{t.description}</span>
+                          <span className="text-sm truncate">{getDisplayName(t, rules)}</span>
                         </div>
                         <span
                           className={`text-sm tabular-nums font-medium shrink-0 ${
@@ -228,6 +231,7 @@ export function DesktopDashboard({
           attentionCount={attentionCount}
           selectedMonth={selectedMonth}
           onCategoryChange={onCategoryChange}
+          rules={rules}
         />
       )}
     </div>
@@ -240,12 +244,14 @@ function NeedsAttentionSection({
   attentionCount,
   selectedMonth,
   onCategoryChange,
+  rules,
 }: {
   transactions: LocalTransaction[];
   categories: LocalCategory[];
   attentionCount: number;
   selectedMonth: string | null;
   onCategoryChange: (transactionId: string, categoryId: string) => void;
+  rules: LocalRule[];
 }) {
   return (
     <Card>
@@ -283,7 +289,7 @@ function NeedsAttentionSection({
                     <span className="text-xs sm:text-sm text-muted-foreground w-auto sm:w-16 shrink-0">
                       {formatDate(t.date)}
                     </span>
-                    <span className="text-sm truncate">{t.description}</span>
+                    <span className="text-sm truncate">{getDisplayName(t, rules)}</span>
                   </div>
                   <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                     <Select
