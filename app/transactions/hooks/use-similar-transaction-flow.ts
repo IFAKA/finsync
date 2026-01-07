@@ -10,6 +10,7 @@ import {
   useCategories,
   type LocalTransaction,
 } from "@/lib/hooks/db";
+import type { AmountMatchType } from "@/lib/db/schema";
 
 interface RecentlyCategorized {
   transaction: LocalTransaction;
@@ -88,6 +89,7 @@ export function useSimilarTransactionFlow() {
         amountEquals?: number;
         amountMin?: number;
         amountMax?: number;
+        amountMatchType?: AmountMatchType;
       },
       matchingTransactionIds: string[]
     ) => {
@@ -117,6 +119,7 @@ export function useSimilarTransactionFlow() {
           amountEquals: criteria.amountEquals,
           amountMin: criteria.amountMin,
           amountMax: criteria.amountMax,
+          amountMatchType: criteria.amountMatchType,
           priority: 0,
           isEnabled: true,
         });
@@ -186,6 +189,7 @@ export function useSimilarTransactionFlow() {
         amountEquals?: number;
         amountMin?: number;
         amountMax?: number;
+        amountMatchType?: AmountMatchType;
       },
       matchingTransactionIds: string[]
     ) => {
@@ -213,6 +217,7 @@ export function useSimilarTransactionFlow() {
           amountEquals: criteria.amountEquals,
           amountMin: criteria.amountMin,
           amountMax: criteria.amountMax,
+          amountMatchType: criteria.amountMatchType,
           priority: 0,
           isEnabled: true,
         });
@@ -263,6 +268,7 @@ export function useSimilarTransactionFlow() {
         amountEquals?: number;
         amountMin?: number;
         amountMax?: number;
+        amountMatchType?: AmountMatchType;
       },
       matchingTransactionIds: string[]
     ) => {
@@ -288,6 +294,7 @@ export function useSimilarTransactionFlow() {
           amountEquals: criteria.amountEquals,
           amountMin: criteria.amountMin,
           amountMax: criteria.amountMax,
+          amountMatchType: criteria.amountMatchType,
         });
 
         playSound("complete");

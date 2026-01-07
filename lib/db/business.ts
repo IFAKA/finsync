@@ -55,6 +55,7 @@ export async function findSimilarTransactions(
     amountMin?: number;
     amountMax?: number;
     amountEquals?: number;
+    amountMatchType?: 'absolute' | 'expense' | 'income';
   },
   excludeId?: string
 ): Promise<LocalTransaction[]> {
@@ -77,6 +78,11 @@ export async function findSimilarTransactions(
         tx.description.toLowerCase().includes(searchTerm);
       if (!matchesDesc) return false;
     }
+
+    // Check amount match type filter first
+    const matchType = criteria.amountMatchType || 'absolute';
+    if (matchType === 'expense' && tx.amount >= 0) return false;
+    if (matchType === 'income' && tx.amount <= 0) return false;
 
     // Use absolute value for amount comparisons (expenses are negative)
     const absAmount = Math.abs(tx.amount);

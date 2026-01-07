@@ -13,6 +13,11 @@ function matchesRule(transaction: LocalTransaction, rule: LocalRule): boolean {
     if (!matchesDesc) return false;
   }
 
+  // Check amount match type filter first
+  const matchType = rule.amountMatchType || 'absolute';
+  if (matchType === 'expense' && transaction.amount >= 0) return false;
+  if (matchType === 'income' && transaction.amount <= 0) return false;
+
   // Use absolute value for amount comparisons (expenses are negative)
   const absAmount = Math.abs(transaction.amount);
 

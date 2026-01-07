@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CreateRuleModal } from "@/components/create-rule-modal";
 import { useRules, useCategories, useRuleMutations, type LocalRule } from "@/lib/hooks/db";
+import type { AmountMatchType } from "@/lib/db/schema";
 import { formatCurrency } from "@/lib/utils";
 import { playSound } from "@/lib/sounds";
 
@@ -40,6 +41,7 @@ export default function RulesPage() {
       amountEquals?: number;
       amountMin?: number;
       amountMax?: number;
+      amountMatchType?: AmountMatchType;
     },
     _matchingTransactionIds: string[]
   ) => {
@@ -47,10 +49,8 @@ export default function RulesPage() {
     if (criteria.categoryId) {
       const selectedCategory = categories.find((c) => c.id === criteria.categoryId);
       if (selectedCategory?.name === "Income") {
-        const onlyMatchesNegative =
-          (criteria.amountEquals != null && criteria.amountEquals < 0) ||
-          (criteria.amountMax != null && criteria.amountMax < 0);
-        if (onlyMatchesNegative) {
+        const onlyMatchesExpenses = criteria.amountMatchType === "expense";
+        if (onlyMatchesExpenses) {
           toast.warning("Income category is for positive amounts (money received)");
           return;
         }
@@ -66,6 +66,7 @@ export default function RulesPage() {
           amountEquals: criteria.amountEquals,
           amountMin: criteria.amountMin,
           amountMax: criteria.amountMax,
+          amountMatchType: criteria.amountMatchType,
           descriptionContains: criteria.descriptionContains,
         });
         toast.success("Rule updated");
@@ -77,6 +78,7 @@ export default function RulesPage() {
           amountEquals: criteria.amountEquals,
           amountMin: criteria.amountMin,
           amountMax: criteria.amountMax,
+          amountMatchType: criteria.amountMatchType,
           descriptionContains: criteria.descriptionContains,
           priority: rules.length,
           isEnabled: true,

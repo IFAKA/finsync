@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { LocalTransaction } from "@/lib/hooks/db";
 import { useFindSimilarTransactions } from "@/lib/hooks/db";
+import type { AmountMatchType } from "@/lib/db/schema";
 
 export interface RuleCriteria {
   name: string;
@@ -12,6 +13,7 @@ export interface RuleCriteria {
   amountEquals: string;
   amountMin: string;
   amountMax: string;
+  amountMatchType: AmountMatchType;
 }
 
 const initialCriteria: RuleCriteria = {
@@ -22,6 +24,7 @@ const initialCriteria: RuleCriteria = {
   amountEquals: "",
   amountMin: "",
   amountMax: "",
+  amountMatchType: "expense",
 };
 
 interface UseRuleFormOptions {
@@ -36,6 +39,7 @@ interface UseRuleFormOptions {
     amountEquals?: number;
     amountMin?: number;
     amountMax?: number;
+    amountMatchType?: AmountMatchType;
   };
 }
 
@@ -59,6 +63,7 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
         amountEquals: initialRule.amountEquals?.toString() || "",
         amountMin: initialRule.amountMin?.toString() || "",
         amountMax: initialRule.amountMax?.toString() || "",
+        amountMatchType: initialRule.amountMatchType || "expense",
       });
       setStep(0);
     } else if (open && prefillTransaction) {
@@ -72,6 +77,7 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
         amountEquals: "",
         amountMin: "",
         amountMax: "",
+        amountMatchType: prefillTransaction.amount < 0 ? "expense" : "income",
       });
       setStep(0);
     } else if (open && !prefillTransaction && !initialRule) {
@@ -90,6 +96,7 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
         amountMin?: number;
         amountMax?: number;
         amountEquals?: number;
+        amountMatchType?: AmountMatchType;
       } = {};
 
       if (criteria.descriptionContains) {
@@ -103,6 +110,11 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
       }
       if (criteria.amountMax) {
         searchCriteria.amountMax = parseFloat(criteria.amountMax);
+      }
+      // Only include amountMatchType if there's an amount condition
+      const hasAmountCondition = criteria.amountEquals || criteria.amountMin || criteria.amountMax;
+      if (hasAmountCondition) {
+        searchCriteria.amountMatchType = criteria.amountMatchType;
       }
 
       const matches = await findSimilar(searchCriteria, prefillTransaction?.id);
@@ -146,6 +158,7 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
       amountEquals?: number;
       amountMin?: number;
       amountMax?: number;
+      amountMatchType?: AmountMatchType;
     } = {
       name: criteria.name,
     };
@@ -167,6 +180,11 @@ export function useRuleForm({ open, prefillTransaction, prefillCategoryId, initi
     }
     if (criteria.amountMax) {
       ruleCriteria.amountMax = parseFloat(criteria.amountMax);
+    }
+    // Only include amountMatchType if there's an amount condition
+    const hasAmountCondition = criteria.amountEquals || criteria.amountMin || criteria.amountMax;
+    if (hasAmountCondition) {
+      ruleCriteria.amountMatchType = criteria.amountMatchType;
     }
 
     return ruleCriteria;

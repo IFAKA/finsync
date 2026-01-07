@@ -49,6 +49,8 @@ export interface LocalBudget {
   _deleted: boolean;
 }
 
+export type AmountMatchType = 'absolute' | 'expense' | 'income';
+
 export interface LocalRule {
   id: string; // UUID for sync
   serverId?: number;
@@ -57,6 +59,7 @@ export interface LocalRule {
   amountEquals?: number;
   amountMin?: number;
   amountMax?: number;
+  amountMatchType?: AmountMatchType; // 'absolute' (default): match both, 'expense': negative only, 'income': positive only
   descriptionContains?: string;
   displayName?: string; // If set, matching transactions display this name
   priority: number;

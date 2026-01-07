@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/responsive-modal";
 import { useIsMobile } from "@/lib/hooks/use-media-query";
 import { useCategories, type LocalTransaction, type LocalCategory } from "@/lib/hooks/db";
+import type { AmountMatchType } from "@/lib/db/schema";
 import { useRuleForm, RuleFormStep, RulePreviewStep } from "./rule-modal";
 
 export interface CreateRuleModalProps {
@@ -28,6 +29,7 @@ export interface CreateRuleModalProps {
     amountEquals?: number;
     amountMin?: number;
     amountMax?: number;
+    amountMatchType?: AmountMatchType;
   };
   onSave: (
     criteria: {
@@ -38,6 +40,7 @@ export interface CreateRuleModalProps {
       amountEquals?: number;
       amountMin?: number;
       amountMax?: number;
+      amountMatchType?: AmountMatchType;
     },
     matchingTransactionIds: string[]
   ) => void;

@@ -26,6 +26,7 @@ import {
   type LocalTransaction,
   type LocalCategory,
 } from "@/lib/hooks/db";
+import type { AmountMatchType } from "@/lib/db/schema";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export interface CreateAliasModalProps {
@@ -40,6 +41,7 @@ export interface CreateAliasModalProps {
     amountEquals?: number;
     amountMin?: number;
     amountMax?: number;
+    amountMatchType?: AmountMatchType;
   };
   onSave: (
     criteria: {
@@ -50,6 +52,7 @@ export interface CreateAliasModalProps {
       amountEquals?: number;
       amountMin?: number;
       amountMax?: number;
+      amountMatchType?: AmountMatchType;
     },
     matchingTransactionIds: string[]
   ) => void;
@@ -62,6 +65,7 @@ export interface CreateAliasModalProps {
       amountEquals?: number;
       amountMin?: number;
       amountMax?: number;
+      amountMatchType?: AmountMatchType;
     },
     matchingTransactionIds: string[]
   ) => void;
@@ -74,6 +78,7 @@ interface AliasCriteria {
   amountEquals: string;
   amountMin: string;
   amountMax: string;
+  amountMatchType: AmountMatchType;
 }
 
 function extractPattern(description: string): string {
@@ -110,6 +115,7 @@ export function CreateAliasModal({
     amountEquals: "",
     amountMin: "",
     amountMax: "",
+    amountMatchType: "absolute",
   });
   const [matchingTransactions, setMatchingTransactions] = useState<LocalTransaction[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -127,9 +133,10 @@ export function CreateAliasModal({
           amountEquals: existingRule.amountEquals?.toString() || "",
           amountMin: existingRule.amountMin?.toString() || "",
           amountMax: existingRule.amountMax?.toString() || "",
+          amountMatchType: existingRule.amountMatchType || "absolute",
         });
       } else {
-        // Creating new alias
+        // Creating new alias - default to expense since most rules are for expenses
         const desc = transaction.rawDescription || transaction.description;
         setCriteria({
           displayName: "",
@@ -138,6 +145,7 @@ export function CreateAliasModal({
           amountEquals: "",
           amountMin: "",
           amountMax: "",
+          amountMatchType: transaction.amount < 0 ? "expense" : "income",
         });
       }
       setStep(0);
@@ -161,6 +169,7 @@ export function CreateAliasModal({
         amountEquals?: number;
         amountMin?: number;
         amountMax?: number;
+        amountMatchType?: AmountMatchType;
       } = {};
 
       if (criteria.pattern) {
@@ -175,6 +184,10 @@ export function CreateAliasModal({
       if (criteria.amountMax) {
         searchCriteria.amountMax = parseFloat(criteria.amountMax);
       }
+      // Only include amountMatchType if there's an amount condition
+      if (hasAmountCondition) {
+        searchCriteria.amountMatchType = criteria.amountMatchType;
+      }
 
       const matches = await findSimilar(searchCriteria, transaction?.id);
       setMatchingTransactions(matches);
@@ -183,7 +196,7 @@ export function CreateAliasModal({
       setMatchingTransactions([]);
     }
     setIsSearching(false);
-  }, [criteria.pattern, criteria.amountEquals, criteria.amountMin, criteria.amountMax, findSimilar, transaction?.id]);
+  }, [criteria.pattern, criteria.amountEquals, criteria.amountMin, criteria.amountMax, criteria.amountMatchType, findSimilar, transaction?.id]);
 
   // Debounced search
   useEffect(() => {
@@ -212,6 +225,8 @@ export function CreateAliasModal({
     const amountEquals = criteria.amountEquals ? parseFloat(criteria.amountEquals) : undefined;
     const amountMin = criteria.amountMin ? parseFloat(criteria.amountMin) : undefined;
     const amountMax = criteria.amountMax ? parseFloat(criteria.amountMax) : undefined;
+    const hasAmountCondition = amountEquals != null || amountMin != null || amountMax != null;
+    const amountMatchType = hasAmountCondition ? criteria.amountMatchType : undefined;
 
     if (isEditing && existingRule && onUpdate) {
       onUpdate(
@@ -223,6 +238,7 @@ export function CreateAliasModal({
           amountEquals,
           amountMin,
           amountMax,
+          amountMatchType,
         },
         matchingIds
       );
@@ -236,6 +252,7 @@ export function CreateAliasModal({
           amountEquals,
           amountMin,
           amountMax,
+          amountMatchType,
         },
         matchingIds
       );
@@ -272,6 +289,26 @@ export function CreateAliasModal({
       <div className="space-y-2">
         <label className="text-sm font-medium">Amount conditions (optional)</label>
         <div className="space-y-2">
+          <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+            {([
+              { value: "expense", label: "Expense" },
+              { value: "income", label: "Income" },
+              { value: "absolute", label: "Both" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => updateCriteria({ amountMatchType: opt.value })}
+                className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  criteria.amountMatchType === opt.value
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
           <Input
             type="number"
             step="0.01"
@@ -503,6 +540,26 @@ export function CreateAliasModal({
           <div className="space-y-2">
             <label className="text-sm font-medium">Amount conditions (optional)</label>
             <div className="space-y-2">
+              <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+                {([
+                  { value: "expense", label: "Expense" },
+                  { value: "income", label: "Income" },
+                  { value: "absolute", label: "Both" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => updateCriteria({ amountMatchType: opt.value })}
+                    className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      criteria.amountMatchType === opt.value
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
               <Input
                 type="number"
                 step="0.01"
