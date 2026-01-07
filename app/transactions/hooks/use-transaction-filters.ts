@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import type { LocalTransaction } from "@/lib/hooks/db";
+import type { LocalTransaction, LocalRule } from "@/lib/hooks/db";
 import { formatMonth } from "@/lib/utils";
+import { getDisplayName } from "@/lib/utils/display-name";
 
 const PAGE_SIZE = 25;
 
@@ -16,6 +17,7 @@ interface UseTransactionFiltersOptions {
   initialNeedsAttention?: boolean;
   availableMonths: string[];
   allTransactions: LocalTransaction[];
+  rules?: LocalRule[];
   // External callbacks for when filters change (to sync with parent state)
   onCategoryChange?: (value: string) => void;
   onMonthChange?: (value: string | null) => void;
@@ -31,6 +33,7 @@ export function useTransactionFilters({
   initialNeedsAttention = false,
   availableMonths,
   allTransactions,
+  rules = [],
   onCategoryChange,
   onMonthChange,
   onNeedsAttentionChange,
@@ -71,14 +74,17 @@ export function useTransactionFilters({
       result = result.filter((t) => !t.categoryId);
     }
 
-    // Search filter
+    // Search filter - also search by alias display name
     if (debouncedSearch) {
       const searchLower = debouncedSearch.toLowerCase();
-      result = result.filter(
-        (t) =>
+      result = result.filter((t) => {
+        const displayName = getDisplayName(t, rules);
+        return (
           t.description.toLowerCase().includes(searchLower) ||
-          t.merchant?.toLowerCase().includes(searchLower)
-      );
+          t.merchant?.toLowerCase().includes(searchLower) ||
+          displayName.toLowerCase().includes(searchLower)
+        );
+      });
     }
 
     // Sort
@@ -89,7 +95,7 @@ export function useTransactionFilters({
     }
 
     return result;
-  }, [allTransactions, debouncedSearch, sortBy, needsAttention]);
+  }, [allTransactions, debouncedSearch, sortBy, needsAttention, rules]);
 
   // Paginate
   const paginatedTransactions = useMemo(() => {

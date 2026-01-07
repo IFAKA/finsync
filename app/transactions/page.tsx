@@ -91,6 +91,7 @@ function TransactionsContent() {
     initialNeedsAttention,
     availableMonths,
     allTransactions,
+    rules,
     onCategoryChange: setSelectedCategory,
     onMonthChange: setSelectedMonth,
     onNeedsAttentionChange: setNeedsAttention,
