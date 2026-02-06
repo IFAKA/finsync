@@ -146,9 +146,14 @@ function AppContent({ children }: { children: ReactNode }) {
     }, 3000);
   };
 
-  // Show nothing while loading to prevent flash
+  // Show loading spinner while checking onboarding state
   if (isLoading) {
-    return null;
+    return (
+      <main id="main-content" className="flex items-center justify-center min-h-screen safe-area-left safe-area-right" role="status">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <span className="sr-only">Loading application...</span>
+      </main>
+    );
   }
 
   // Bypass onboarding for certain routes (e.g., /sync page from QR code)
@@ -250,7 +255,7 @@ function AppContent({ children }: { children: ReactNode }) {
     <>
       <NavHeader />
       <MobileHeader />
-      <main className="min-h-[calc(100vh-3.5rem)] pb-20 sm:pb-0">
+      <main id="main-content" className="min-h-[calc(100vh-3.5rem)] pb-20 sm:pb-0 safe-area-left safe-area-right">
         {children}
       </main>
       <MobileNav />

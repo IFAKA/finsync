@@ -57,7 +57,7 @@ function StepIndicator({
   status: "completed" | "current" | "pending";
 }) {
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-1" aria-label={`${label}: ${status}`}>
       <motion.div
         className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
           status === "completed"
@@ -123,34 +123,36 @@ export function SyncStepper({ currentStep }: SyncStepperProps) {
   const isComplete = currentStep === totalSteps; // true when success (step 3)
 
   return (
-    <div className="flex items-center px-2 pb-4 mb-2">
-      {SYNC_STEPS.map((step, i) => {
-        const stepNumber = i + 1;
+    <nav aria-label="Sync progress">
+      <div className="flex items-center px-2 pb-4 mb-2">
+        {SYNC_STEPS.map((step, i) => {
+          const stepNumber = i + 1;
 
-        // Determine status: when complete, all steps are "completed"
-        let status: "completed" | "current" | "pending";
-        if (isComplete) {
-          status = "completed"; // All steps green when done
-        } else if (currentStep > stepNumber) {
-          status = "completed";
-        } else if (currentStep === stepNumber) {
-          status = "current";
-        } else {
-          status = "pending";
-        }
+          // Determine status: when complete, all steps are "completed"
+          let status: "completed" | "current" | "pending";
+          if (isComplete) {
+            status = "completed"; // All steps green when done
+          } else if (currentStep > stepNumber) {
+            status = "completed";
+          } else if (currentStep === stepNumber) {
+            status = "current";
+          } else {
+            status = "pending";
+          }
 
-        return (
-          <Fragment key={step.label}>
-            {i > 0 && <StepConnector completed={isComplete || currentStep > stepNumber} />}
-            <StepIndicator
-              icon={step.icon}
-              label={step.label}
-              status={status}
-            />
-          </Fragment>
-        );
-      })}
-    </div>
+          return (
+            <Fragment key={step.label}>
+              {i > 0 && <StepConnector completed={isComplete || currentStep > stepNumber} />}
+              <StepIndicator
+                icon={step.icon}
+                label={step.label}
+                status={status}
+              />
+            </Fragment>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
@@ -317,6 +319,7 @@ export function SyncCreateMode({
 
                 <button
                   onClick={onCopyCode}
+                  aria-label="Copy room code"
                   className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors cursor-pointer mx-auto"
                 >
                   <span className="font-mono text-sm tracking-wider">
@@ -412,6 +415,8 @@ export function SyncJoinMode({
           className="text-center font-mono text-sm tracking-wider"
           maxLength={30}
           autoFocus
+          aria-label="Room code"
+          autoComplete="off"
         />
 
         {isValidRoomCode(inputCode) && (

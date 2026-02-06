@@ -141,7 +141,7 @@ export function SpendingChart({ data, width = 300, height = 300, onCategoryClick
     );
   }
 
-  return <svg ref={svgRef} width={width} height={height} />;
+  return <svg ref={svgRef} width={width} height={height} role="img" aria-label="Spending by category donut chart" />;
 }
 
 interface SpendingBarChartProps {
@@ -246,7 +246,7 @@ export function SpendingBarChart({ data, onCategoryClick }: SpendingBarChartProp
 
   return (
     <div ref={containerRef} className="w-full min-h-[264px]">
-      <svg ref={svgRef} className="w-full" height={expenses.length * 44} />
+      <svg ref={svgRef} className="w-full" height={expenses.length * 44} role="img" aria-label="Spending by category bar chart" />
     </div>
   );
 }

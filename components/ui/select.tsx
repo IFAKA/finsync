@@ -44,7 +44,7 @@ const SelectTrigger = React.forwardRef<
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 opacity-50" />
+      <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -62,7 +62,7 @@ const SelectScrollUpButton = React.forwardRef<
     )}
     {...props}
   >
-    <ChevronUp className="h-4 w-4" />
+    <ChevronUp className="h-4 w-4" aria-hidden="true" />
   </SelectPrimitive.ScrollUpButton>
 ));
 SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName;
@@ -141,7 +141,8 @@ const SelectItem = React.forwardRef<
       // Typography - ensure readable on mobile
       "text-base sm:text-sm",
       // States
-      "outline-none focus:bg-muted/20 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "outline-none focus:bg-muted data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "min-h-[44px] sm:min-h-0",
       // Transitions
       "transition-colors duration-150",
       className

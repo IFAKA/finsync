@@ -116,6 +116,7 @@ function SyncPageContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <h1 className="sr-only">Sync</h1>
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -132,7 +133,7 @@ function SyncPageContent() {
                   exit={{ opacity: 0 }}
                   className="text-center space-y-4"
                 >
-                  <RefreshCw className="w-12 h-12 mx-auto animate-spin text-muted-foreground" />
+                  <RefreshCw className="w-12 h-12 mx-auto animate-spin text-muted-foreground" role="status" aria-label="Validating" />
                   <p className="text-muted-foreground">Validating room code...</p>
                 </motion.div>
               )}
@@ -153,7 +154,7 @@ function SyncPageContent() {
                     <p className="text-sm text-muted-foreground">
                       Verify these emojis match the other device:
                     </p>
-                    <p className="text-3xl">{emojis.join(" ")}</p>
+                    <p className="text-3xl" aria-label={`Verification emojis: ${emojis.join(" ")}`}>{emojis.join(" ")}</p>
                   </div>
                 </motion.div>
               )}

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useIsMobile } from "@/lib/hooks/use-media-query";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -140,7 +141,7 @@ export function ResponsiveModalBody({
 
   if (isMobile) {
     return (
-      <div className={`overflow-y-auto max-h-[60vh] ${className ?? ""}`}>
+      <div className={cn("overflow-y-auto max-h-[60vh]", className)}>
         {children}
       </div>
     );

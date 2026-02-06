@@ -25,12 +25,14 @@ import {
   TargetIcon,
   WandIcon,
   SettingsIcon,
+  TrendingUpIcon,
 } from "@/components/icons";
 
 const navItems = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboardIcon },
   { href: "/transactions", label: "Transactions", Icon: ArrowLeftRightIcon },
   { href: "/budgets", label: "Budgets", Icon: TargetIcon },
+  { href: "/planning", label: "Planning", Icon: TrendingUpIcon },
   { href: "/rules", label: "Rules", Icon: WandIcon },
 ];
 
@@ -49,6 +51,7 @@ function NavItem({ href, label, Icon }: { href: string; label: string; Icon: typ
       <Link
         href={href}
         onClick={() => playSound("click")}
+        aria-current={isActive ? "page" : undefined}
         className={cn(
           "flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors",
           isActive
@@ -121,7 +124,7 @@ export function NavHeader() {
           </motion.div>
 
           {/* Desktop Navigation */}
-          <nav className="flex items-center gap-1">
+          <nav aria-label="Main navigation" className="flex items-center gap-1">
             {navItems.map((item) => (
               <NavItem key={item.href} {...item} />
             ))}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, Suspense, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, Suspense, useMemo, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -49,6 +49,7 @@ function TransactionsLoading() {
 
 function TransactionsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [selectedTransaction, setSelectedTransaction] = useState<LocalTransaction | null>(null);
 
   // Fetch data
@@ -66,6 +67,19 @@ function TransactionsContent() {
   const initialSearch = searchParams.get("search") || "";
   const initialSortBy = (searchParams.get("sort") as "date" | "amount") || "date";
   const initialPage = Math.max(0, parseInt(searchParams.get("page") || "1", 10) - 1);
+
+  // Sync filters to URL
+  const syncToUrl = useCallback((params: Record<string, string | null>) => {
+    const url = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(params)) {
+      if (value && value !== "all" && value !== "false" && value !== "date") {
+        url.set(key, value);
+      } else {
+        url.delete(key);
+      }
+    }
+    router.replace(`?${url.toString()}`, { scroll: false });
+  }, [searchParams, router]);
 
   // Lift filter state that affects data fetching to component level (single source of truth)
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
@@ -92,9 +106,9 @@ function TransactionsContent() {
     availableMonths,
     allTransactions,
     rules,
-    onCategoryChange: setSelectedCategory,
-    onMonthChange: setSelectedMonth,
-    onNeedsAttentionChange: setNeedsAttention,
+    onCategoryChange: (cat: string) => { setSelectedCategory(cat); syncToUrl({ category: cat }); },
+    onMonthChange: (month: string | null) => { setSelectedMonth(month); syncToUrl({ month }); },
+    onNeedsAttentionChange: (val: boolean) => { setNeedsAttention(val); syncToUrl({ attention: val ? "true" : null }); },
   });
 
   // Similar transaction flow (for rule creation)

@@ -172,7 +172,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         )}
 
         {error && (
-          <p className="text-sm text-error mt-4">{error}</p>
+          <p role="alert" className="text-sm text-error mt-4">{error}</p>
         )}
       </div>
     </div>

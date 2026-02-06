@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Plus,
-  List,
   ArrowRight,
   AlertTriangle,
 } from "lucide-react";
@@ -101,17 +100,6 @@ export function DesktopDashboard({
         </div>
 
         <div className="flex items-center gap-2">
-          {selectedMonth && (
-            <MotionButton
-              size="sm"
-              variant="ghost"
-              sound="click"
-              onClick={() => router.push(`/transactions?month=${selectedMonth}`)}
-            >
-              <List className="w-4 h-4" />
-              <span className="hidden sm:inline">View All</span>
-            </MotionButton>
-          )}
           <MotionButton
             size="sm"
             variant="secondary"
@@ -119,11 +107,14 @@ export function DesktopDashboard({
             onClick={onUploadClick}
           >
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Upload</span>
+            <span className="hidden sm:inline" aria-hidden="true">Upload</span>
+            <span className="sr-only">Upload bank statement</span>
           </MotionButton>
         </div>
       </div>
 
+      <section aria-labelledby="monthly-summary-heading">
+      <h2 id="monthly-summary-heading" className="sr-only">Monthly Summary</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StaggerItem index={0}>
           <Card className="hover-lift">
@@ -161,6 +152,7 @@ export function DesktopDashboard({
           </Card>
         </StaggerItem>
       </div>
+      </section>
 
       {/* AI Insights */}
       <AIInsights
@@ -314,6 +306,7 @@ function NeedsAttentionSection({
                       onValueChange={(value) => onCategoryChange(t.id, value)}
                     >
                       <SelectTrigger
+                        aria-label="Select category"
                         className="h-7 text-xs w-auto min-w-[100px] border-l-2"
                         style={{ borderLeftColor: catInfo.color }}
                       >

@@ -69,6 +69,7 @@ export function BentoMobileDashboard({
 
   return (
     <div className="space-y-3 md:hidden">
+      <h1 className="sr-only">Dashboard</h1>
       <div className="flex items-center justify-between">
         <MonthNavigator
           selectedMonth={selectedMonth}
@@ -79,6 +80,7 @@ export function BentoMobileDashboard({
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={onUploadClick}
+          aria-label="Upload bank statement"
           className="h-10 w-10 flex items-center justify-center bg-foreground text-background rounded-lg"
         >
           <Plus className="w-5 h-5" />
@@ -90,7 +92,10 @@ export function BentoMobileDashboard({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.05 }}
+          role="button"
+          tabIndex={0}
           onClick={() => router.push(`/transactions?month=${selectedMonth}`)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/transactions?month=${selectedMonth}`); } }}
           className="bg-card border border-border rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer touch-feedback"
         >
           <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
@@ -106,7 +111,10 @@ export function BentoMobileDashboard({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
+          role="button"
+          tabIndex={0}
           onClick={() => router.push(`/transactions?month=${selectedMonth}`)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/transactions?month=${selectedMonth}`); } }}
           className="bg-card border border-border rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer touch-feedback"
         >
           <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
@@ -142,7 +150,10 @@ export function BentoMobileDashboard({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
+          role="button"
+          tabIndex={0}
           onClick={() => router.push("/budgets")}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push("/budgets"); } }}
           className="bg-card border border-border rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer touch-feedback"
         >
           <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
@@ -162,7 +173,7 @@ export function BentoMobileDashboard({
               >
                 {budgetPercent}%
               </p>
-              <div className="mt-1.5 h-1.5 bg-border rounded-full overflow-hidden">
+              <div className="mt-1.5 h-1.5 bg-border rounded-full overflow-hidden" role="progressbar" aria-valuenow={budgetPercent} aria-valuemin={0} aria-valuemax={100}>
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min(budgetPercent, 100)}%` }}
@@ -195,8 +206,11 @@ export function BentoMobileDashboard({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
+        role="button"
+        tabIndex={0}
         onClick={() => router.push(`/transactions?month=${selectedMonth}&sort=amount`)}
-        className="bg-card border border-border rounded-xl p-4 active:scale-[0.99] transition-transform cursor-pointer"
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/transactions?month=${selectedMonth}&sort=amount`); } }}
+        className="bg-card border border-border rounded-xl p-4 active:scale-[0.99] transition-transform cursor-pointer touch-feedback"
       >
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs text-muted-foreground">Top Spending</span>
@@ -241,7 +255,10 @@ export function BentoMobileDashboard({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
+          role="button"
+          tabIndex={0}
           onClick={() => router.push(attentionCount > 0 ? `/transactions?attention=true${selectedMonth ? `&month=${selectedMonth}` : ''}` : "/transactions")}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(attentionCount > 0 ? `/transactions?attention=true${selectedMonth ? `&month=${selectedMonth}` : ''}` : "/transactions"); } }}
           className={`border rounded-xl p-3 active:scale-[0.98] transition-transform cursor-pointer ${
             attentionCount > 0
               ? "bg-warning/10 border-warning/30"
@@ -269,7 +286,10 @@ export function BentoMobileDashboard({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.35 }}
+          role="button"
+          tabIndex={0}
           onClick={() => router.push(`/transactions?month=${selectedMonth}`)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/transactions?month=${selectedMonth}`); } }}
           className="bg-card border border-border rounded-xl p-3 active:scale-[0.98] transition-transform cursor-pointer"
         >
           <div className="flex items-center gap-2">

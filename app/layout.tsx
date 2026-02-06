@@ -6,6 +6,7 @@ import { InstallPrompt } from "@/components/install-prompt";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { UpdateBanner } from "@/components/update-banner";
 import { AppShell } from "@/components/app-shell";
+import { MotionProvider } from "@/components/motion-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,9 +39,11 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: "#09090b",
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
 };
 
 export default function RootLayout({
@@ -53,11 +56,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <UpdateBanner />
-        <AppShell>{children}</AppShell>
-        <Toaster />
-        <InstallPrompt />
-        <OfflineIndicator />
+        <a href="#main-content" className="skip-link">Skip to content</a>
+        <MotionProvider>
+          <UpdateBanner />
+          <AppShell>{children}</AppShell>
+          <Toaster />
+          <InstallPrompt />
+          <OfflineIndicator />
+        </MotionProvider>
       </body>
     </html>
   );

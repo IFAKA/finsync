@@ -137,6 +137,7 @@ export function CreateRuleModal({
                 <button
                   onClick={() => setStep(0)}
                   className="p-1 -ml-1 hover:bg-muted rounded"
+                  aria-label="Go back"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>

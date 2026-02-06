@@ -274,6 +274,12 @@ export function isModelLoading(): boolean {
   return isInitializing;
 }
 
+export function interruptGeneration(): void {
+  if (engine) {
+    engine.interruptGenerate();
+  }
+}
+
 export async function generateCompletion(
   prompt: string,
   systemPrompt?: string

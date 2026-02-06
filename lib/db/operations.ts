@@ -5,6 +5,10 @@ import {
   type LocalTransaction,
   type LocalBudget,
   type LocalRule,
+  type LocalSavingsGoal,
+  type LocalRecurringPattern,
+  type LocalScenario,
+  type LocalGoalContribution,
 } from "./schema";
 
 // Categories CRUD
@@ -268,6 +272,189 @@ export async function updateRule(id: string, data: Partial<LocalRule>): Promise<
 export async function deleteRule(id: string): Promise<void> {
   const db = getLocalDB();
   await db.rules.update(id, {
+    _deleted: true,
+    _lastModified: new Date(),
+  });
+}
+
+// Savings Goals CRUD
+export async function getSavingsGoals(): Promise<LocalSavingsGoal[]> {
+  const db = getLocalDB();
+  return db.savingsGoals.filter((g) => !g._deleted).toArray();
+}
+
+export async function getSavingsGoalById(id: string): Promise<LocalSavingsGoal | undefined> {
+  const db = getLocalDB();
+  const goal = await db.savingsGoals.get(id);
+  return goal && !goal._deleted ? goal : undefined;
+}
+
+export async function createSavingsGoal(
+  data: Omit<LocalSavingsGoal, "id" | "createdAt" | "_lastModified" | "_deleted">
+): Promise<LocalSavingsGoal> {
+  const db = getLocalDB();
+  const now = new Date();
+  const goal: LocalSavingsGoal = {
+    ...data,
+    id: generateId(),
+    createdAt: now,
+    _lastModified: now,
+    _deleted: false,
+  };
+  await db.savingsGoals.put(goal);
+  return goal;
+}
+
+export async function updateSavingsGoal(id: string, data: Partial<LocalSavingsGoal>): Promise<void> {
+  const db = getLocalDB();
+  await db.savingsGoals.update(id, {
+    ...data,
+    _lastModified: new Date(),
+  });
+}
+
+export async function deleteSavingsGoal(id: string): Promise<void> {
+  const db = getLocalDB();
+  await db.savingsGoals.update(id, {
+    _deleted: true,
+    _lastModified: new Date(),
+  });
+}
+
+// Recurring Patterns CRUD
+export async function getRecurringPatterns(options?: {
+  source?: 'detected' | 'manual';
+  isActive?: boolean;
+}): Promise<LocalRecurringPattern[]> {
+  const db = getLocalDB();
+  let collection = db.recurringPatterns.filter((p) => !p._deleted);
+
+  if (options?.source !== undefined) {
+    collection = collection.filter((p) => p.source === options.source);
+  }
+
+  if (options?.isActive !== undefined) {
+    collection = collection.filter((p) => p.isActive === options.isActive);
+  }
+
+  return collection.toArray();
+}
+
+export async function getRecurringPatternById(id: string): Promise<LocalRecurringPattern | undefined> {
+  const db = getLocalDB();
+  const pattern = await db.recurringPatterns.get(id);
+  return pattern && !pattern._deleted ? pattern : undefined;
+}
+
+export async function createRecurringPattern(
+  data: Omit<LocalRecurringPattern, "id" | "createdAt" | "_lastModified" | "_deleted">
+): Promise<LocalRecurringPattern> {
+  const db = getLocalDB();
+  const now = new Date();
+  const pattern: LocalRecurringPattern = {
+    ...data,
+    id: generateId(),
+    createdAt: now,
+    _lastModified: now,
+    _deleted: false,
+  };
+  await db.recurringPatterns.put(pattern);
+  return pattern;
+}
+
+export async function updateRecurringPattern(id: string, data: Partial<LocalRecurringPattern>): Promise<void> {
+  const db = getLocalDB();
+  await db.recurringPatterns.update(id, {
+    ...data,
+    _lastModified: new Date(),
+  });
+}
+
+export async function deleteRecurringPattern(id: string): Promise<void> {
+  const db = getLocalDB();
+  await db.recurringPatterns.update(id, {
+    _deleted: true,
+    _lastModified: new Date(),
+  });
+}
+
+// Scenarios CRUD
+export async function getScenarios(): Promise<LocalScenario[]> {
+  const db = getLocalDB();
+  return db.scenarios.filter((s) => !s._deleted).toArray();
+}
+
+export async function getScenarioById(id: string): Promise<LocalScenario | undefined> {
+  const db = getLocalDB();
+  const scenario = await db.scenarios.get(id);
+  return scenario && !scenario._deleted ? scenario : undefined;
+}
+
+export async function createScenario(
+  data: Omit<LocalScenario, "id" | "createdAt" | "_lastModified" | "_deleted">
+): Promise<LocalScenario> {
+  const db = getLocalDB();
+  const now = new Date();
+  const scenario: LocalScenario = {
+    ...data,
+    id: generateId(),
+    createdAt: now,
+    _lastModified: now,
+    _deleted: false,
+  };
+  await db.scenarios.put(scenario);
+  return scenario;
+}
+
+export async function updateScenario(id: string, data: Partial<LocalScenario>): Promise<void> {
+  const db = getLocalDB();
+  await db.scenarios.update(id, {
+    ...data,
+    _lastModified: new Date(),
+  });
+}
+
+export async function deleteScenario(id: string): Promise<void> {
+  const db = getLocalDB();
+  await db.scenarios.update(id, {
+    _deleted: true,
+    _lastModified: new Date(),
+  });
+}
+
+// Goal Contributions CRUD
+export async function getGoalContributions(goalId?: string): Promise<LocalGoalContribution[]> {
+  const db = getLocalDB();
+  let collection = db.goalContributions.filter((c) => !c._deleted);
+
+  if (goalId) {
+    collection = collection.filter((c) => c.goalId === goalId);
+  }
+
+  const result = await collection.sortBy("date");
+  result.reverse(); // Most recent first
+  return result;
+}
+
+export async function createGoalContribution(
+  data: Omit<LocalGoalContribution, "id" | "createdAt" | "_lastModified" | "_deleted">
+): Promise<LocalGoalContribution> {
+  const db = getLocalDB();
+  const now = new Date();
+  const contribution: LocalGoalContribution = {
+    ...data,
+    id: generateId(),
+    createdAt: now,
+    _lastModified: now,
+    _deleted: false,
+  };
+  await db.goalContributions.put(contribution);
+  return contribution;
+}
+
+export async function deleteGoalContribution(id: string): Promise<void> {
+  const db = getLocalDB();
+  await db.goalContributions.update(id, {
     _deleted: true,
     _lastModified: new Date(),
   });

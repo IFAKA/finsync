@@ -5,6 +5,7 @@ import {
   generateSpendingInsights,
   isModelLoaded,
   isModelLoading,
+  interruptGeneration,
   type SpendingData,
   type LoadingCallback,
 } from "@/lib/ai/web-llm";
@@ -171,8 +172,8 @@ export function useAIInsights({
         onProgress
       );
 
-      // Cache the result (always cache even if unmounted - it's still valid)
-      if (generatingForKey) {
+      // Cache the result if component is still mounted (interrupted results may be partial)
+      if (mountedRef.current && generatingForKey && insight) {
         insightsCache.set(generatingForKey, insight);
         saveCache(insightsCache);
       }
@@ -211,11 +212,12 @@ export function useAIInsights({
     previousMonthSummary,
   ]);
 
-  // Track mounted state
+  // Track mounted state — interrupt generation on unmount
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      interruptGeneration();
     };
   }, []);
 

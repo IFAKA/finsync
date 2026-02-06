@@ -12,12 +12,14 @@ import {
   ArrowLeftRightIcon,
   TargetIcon,
   WandIcon,
+  TrendingUpIcon,
 } from "@/components/icons";
 
 const navItems = [
   { href: "/", label: "Home", Icon: LayoutDashboardIcon },
   { href: "/transactions", label: "Transactions", Icon: ArrowLeftRightIcon },
   { href: "/budgets", label: "Budgets", Icon: TargetIcon },
+  { href: "/planning", label: "Planning", Icon: TrendingUpIcon },
   { href: "/rules", label: "Rules", Icon: WandIcon },
 ];
 
@@ -38,15 +40,44 @@ export function MobileNav() {
     }
   );
 
-  // Hide nav in landscape mode on small screens to maximize vertical space
+  // Compact nav in landscape mode on small screens to maximize vertical space
   const isMobileLandscape = isLandscape && typeof window !== "undefined" && window.innerHeight < 500;
 
   if (isMobileLandscape) {
-    return null;
+    return (
+      <nav
+        aria-label="Main navigation"
+        className="fixed bottom-0 left-0 right-0 z-50 sm:hidden"
+      >
+        <div className="bg-background/95 backdrop-blur-lg border-t border-border px-2 pb-[env(safe-area-inset-bottom)]">
+          <div className="flex items-center justify-around h-10">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              const { Icon } = item;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  aria-label={item.label}
+                  className={cn(
+                    "flex items-center justify-center p-2 rounded-md transition-colors",
+                    isActive ? "text-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  <Icon size={18} animate={isActive} />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+    );
   }
 
   return (
     <nav
+      aria-label="Main navigation"
       className="fixed bottom-0 left-0 right-0 z-50 sm:hidden"
       {...swipeHandlers}
     >
@@ -64,6 +95,7 @@ export function MobileNav() {
                 key={item.href}
                 href={item.href}
                 onClick={() => playSound("click")}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl min-w-[64px] transition-colors relative touch-feedback",
                   isActive

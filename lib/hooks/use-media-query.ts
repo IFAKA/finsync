@@ -36,6 +36,10 @@ export function useIsLandscape(): boolean {
   return useMediaQuery("(orientation: landscape)");
 }
 
+export function usePrefersReducedMotion(): boolean {
+  return useMediaQuery("(prefers-reduced-motion: reduce)");
+}
+
 // Combined device detection hook
 export function useDeviceType(): "mobile" | "tablet" | "desktop" {
   const isMobile = useIsMobile();

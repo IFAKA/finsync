@@ -6,6 +6,12 @@ import { playSound } from "@/lib/sounds";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
+// Check if user prefers reduced motion (sound can be jarring with motion preference)
+function shouldPlaySound(): boolean {
+  if (typeof window === "undefined") return true;
+  return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 // Hook to play sounds when toasts appear
 function useToastSounds() {
   useEffect(() => {
@@ -16,17 +22,17 @@ function useToastSounds() {
 
     // Override toast methods to add sound
     toast.success = (message, options) => {
-      playSound("success");
+      if (shouldPlaySound()) playSound("success");
       return originalSuccess(message, options);
     };
 
     toast.error = (message, options) => {
-      playSound("error");
+      if (shouldPlaySound()) playSound("error");
       return originalError(message, options);
     };
 
     toast.warning = (message, options) => {
-      playSound("warning");
+      if (shouldPlaySound()) playSound("warning");
       return originalWarning(message, options);
     };
 

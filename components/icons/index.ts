@@ -7,3 +7,4 @@ export { SettingsIcon } from "./settings";
 export { CheckIcon } from "./check";
 export { WifiIcon } from "./wifi";
 export { SmartphoneIcon } from "./smartphone";
+export { TrendingUpIcon } from "./trending-up";

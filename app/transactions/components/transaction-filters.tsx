@@ -183,6 +183,7 @@ export function MobileTransactionFilters({
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             className={`pl-9 h-9 ${nlState.isNLMode ? "pr-9 border-primary/50" : ""}`}
+            aria-label="Search transactions"
           />
           <AnimatePresence>
             {nlState.isNLMode && (
@@ -214,7 +215,7 @@ export function MobileTransactionFilters({
 
       {/* Filters */}
       <Select value={selectedCategory} onValueChange={onCategoryChange}>
-        <SelectTrigger className="h-9">
+        <SelectTrigger className="h-9" aria-label="Filter by category">
           <SelectValue placeholder="Category" />
         </SelectTrigger>
         <SelectContent>
@@ -234,7 +235,7 @@ export function MobileTransactionFilters({
       </Select>
 
       <Select value={selectedMonth || "all"} onValueChange={onMonthChange}>
-        <SelectTrigger className="h-9">
+        <SelectTrigger className="h-9" aria-label="Filter by month">
           <SelectValue placeholder="Month" />
         </SelectTrigger>
         <SelectContent>
@@ -248,7 +249,7 @@ export function MobileTransactionFilters({
       </Select>
 
       <Select value={sortBy} onValueChange={(v) => onSortChange(v as "date" | "amount")}>
-        <SelectTrigger className="h-9">
+        <SelectTrigger className="h-9" aria-label="Sort by">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -402,6 +403,7 @@ export function DesktopTransactionFilters({
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
               className={`pl-9 ${nlState.isNLMode ? "pr-9 border-primary/50" : ""}`}
+              aria-label="Search transactions"
             />
             <AnimatePresence>
               {nlState.isNLMode && (
@@ -417,7 +419,7 @@ export function DesktopTransactionFilters({
             </AnimatePresence>
           </div>
         <Select value={selectedCategory} onValueChange={onCategoryChange}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[160px]" aria-label="Filter by category">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -436,7 +438,7 @@ export function DesktopTransactionFilters({
           </SelectContent>
         </Select>
         <Select value={selectedMonth || ""} onValueChange={onMonthChange}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px]" aria-label="Filter by month">
             <SelectValue placeholder="Month" />
           </SelectTrigger>
           <SelectContent>
@@ -449,7 +451,7 @@ export function DesktopTransactionFilters({
           </SelectContent>
         </Select>
         <Select value={sortBy} onValueChange={(v) => onSortChange(v as "date" | "amount")}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px]" aria-label="Sort by">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

@@ -111,7 +111,7 @@ export function TransactionDetailDialog({
         {/* Category Select - Editable */}
         {categories.length > 0 && onCategoryChange && (
           <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground">Category</label>
+            <label htmlFor="txn-category" className="text-xs text-muted-foreground">Category</label>
             <AnimatePresence mode="wait">
               {showSimilarPrompt ? (
                 <motion.div
@@ -178,6 +178,7 @@ export function TransactionDetailDialog({
                     }}
                   >
                     <SelectTrigger
+                      id="txn-category"
                       className="w-full h-10 border-l-4"
                       style={{ borderLeftColor: currentCategory?.color || "#888" }}
                     >
@@ -205,10 +206,10 @@ export function TransactionDetailDialog({
 
         {/* Description */}
         <div className="space-y-1.5">
-          <label className="text-xs text-muted-foreground">Description</label>
+          <label htmlFor="txn-description" className="text-xs text-muted-foreground">Description</label>
           <div className="flex items-start gap-2">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm">{displayName}</p>
+            <div id="txn-description" className="flex-1 min-w-0">
+              <p className="text-sm truncate">{displayName}</p>
               {hasAlias && (
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Original: {transaction.description}
@@ -219,7 +220,7 @@ export function TransactionDetailDialog({
               <button
                 onClick={() => setShowAliasModal(true)}
                 className="p-1.5 -mr-1.5 rounded-md hover:bg-muted transition-colors shrink-0"
-                title="Rename this transaction"
+                aria-label="Rename this transaction"
               >
                 <Pencil className="w-4 h-4 text-muted-foreground" />
               </button>
@@ -232,7 +233,7 @@ export function TransactionDetailDialog({
           {transaction.merchant && (
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Merchant</span>
-              <span>{transaction.merchant}</span>
+              <span className="truncate">{transaction.merchant}</span>
             </div>
           )}
           {transaction.bankName && (

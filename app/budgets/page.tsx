@@ -133,6 +133,7 @@ export default function BudgetsPage() {
 
   return (
     <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-3 sm:space-y-6">
+      <h1 className="sr-only md:hidden">Budgets</h1>
       {/* Mobile Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -143,6 +144,7 @@ export default function BudgetsPage() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => navigateMonth(-1)}
+            aria-label="Previous month"
             className="h-10 w-10 flex items-center justify-center hover:bg-muted/50 rounded-lg transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -161,6 +163,7 @@ export default function BudgetsPage() {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => navigateMonth(1)}
+            aria-label="Next month"
             className="h-10 w-10 flex items-center justify-center hover:bg-muted/50 rounded-lg transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
@@ -180,6 +183,7 @@ export default function BudgetsPage() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigateMonth(-1)}
+            aria-label="Previous month"
             className="h-9 w-9 flex items-center justify-center hover:bg-muted rounded transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -199,6 +203,7 @@ export default function BudgetsPage() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigateMonth(1)}
+            aria-label="Next month"
             className="h-9 w-9 flex items-center justify-center hover:bg-muted rounded transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
@@ -303,14 +308,14 @@ export default function BudgetsPage() {
                           {editingCategory === item.categoryId ? (
                             <div className="flex items-center gap-1 sm:gap-2">
                               <Input type="number" value={editValue} onChange={(e) => setEditValue(e.target.value)} onKeyDown={(e) => handleKeyDown(e, item.categoryId)} className="w-20 sm:w-24 h-8 text-right text-sm" autoFocus />
-                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleSave(item.categoryId)}><Check className="w-4 h-4" /></Button>
-                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingCategory(null)}><X className="w-4 h-4" /></Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleSave(item.categoryId)} aria-label="Save budget"><Check className="w-4 h-4" /></Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingCategory(null)} aria-label="Cancel editing"><X className="w-4 h-4" /></Button>
                             </div>
                           ) : (
                             <div className="flex items-center gap-1 sm:gap-2">
                               <span className="text-xs sm:text-sm tabular-nums">{formatCurrency(item.spent)} / {formatCurrency(item.monthlyLimit!)}</span>
-                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(item.categoryId, item.monthlyLimit)}><Pencil className="w-4 h-4" /></Button>
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-error active:text-error" onClick={() => handleDelete(item.categoryId, item.categoryName)}><X className="w-4 h-4" /></Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(item.categoryId, item.monthlyLimit)} aria-label="Edit budget"><Pencil className="w-4 h-4" /></Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-error active:text-error" onClick={() => handleDelete(item.categoryId, item.categoryName)} aria-label="Delete budget"><X className="w-4 h-4" /></Button>
                             </div>
                           )}
                         </div>
@@ -340,8 +345,8 @@ export default function BudgetsPage() {
                       {editingCategory === item.categoryId ? (
                         <div className="flex items-center gap-1 sm:gap-2">
                           <Input type="number" value={editValue} onChange={(e) => setEditValue(e.target.value)} onKeyDown={(e) => handleKeyDown(e, item.categoryId)} className="w-20 sm:w-24 h-8 text-right text-sm" placeholder="Budget" autoFocus />
-                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleSave(item.categoryId)}><Check className="w-4 h-4" /></Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingCategory(null)}><X className="w-4 h-4" /></Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleSave(item.categoryId)} aria-label="Save budget"><Check className="w-4 h-4" /></Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingCategory(null)} aria-label="Cancel editing"><X className="w-4 h-4" /></Button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 sm:gap-2">

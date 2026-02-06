@@ -120,7 +120,7 @@ export function Onboarding({ onUploadClick, onSyncClick }: OnboardingProps) {
     return (
       <FadeIn className="min-h-dvh flex flex-col bg-background">
         {/* Progress bar at top */}
-        <div className="px-6 pt-4 pb-2">
+        <div className="px-6 pt-4 pb-2" role="group" aria-label="Onboarding progress">
           <div className="flex gap-2">
             {STEPS.map((_, i) => (
               <motion.div
@@ -136,7 +136,7 @@ export function Onboarding({ onUploadClick, onSyncClick }: OnboardingProps) {
               </motion.div>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground mt-2" aria-live="polite">
             Step {currentStep + 1} of {STEPS.length}
           </p>
         </div>

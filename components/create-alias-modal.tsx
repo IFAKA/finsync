@@ -314,11 +314,11 @@ export function CreateAliasModal({
         />
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Amount conditions (optional)</label>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">Amount conditions (optional)</legend>
         <div className="space-y-2">
           {/* Amount mode toggle */}
-          <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+          <div className="flex gap-1 p-1 bg-muted/50 rounded-lg" role="group" aria-label="Amount mode">
             {([
               { value: "none", label: "None" },
               { value: "exact", label: "Exact" },
@@ -327,6 +327,7 @@ export function CreateAliasModal({
               <button
                 key={opt.value}
                 type="button"
+                aria-pressed={criteria.amountMode === opt.value}
                 onClick={() => updateCriteria({
                   amountMode: opt.value,
                   // Clear values when switching modes
@@ -347,32 +348,37 @@ export function CreateAliasModal({
 
           {/* Expense/Income/Both toggle - only show when amount mode is not 'none' */}
           {criteria.amountMode !== 'none' && (
-            <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
-              {([
-                { value: "expense", label: "Expense" },
-                { value: "income", label: "Income" },
-                { value: "absolute", label: "Both" },
-              ] as const).map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => updateCriteria({ amountMatchType: opt.value })}
-                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    criteria.amountMatchType === opt.value
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <fieldset>
+              <legend className="sr-only">Amount match type</legend>
+              <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+                {([
+                  { value: "expense", label: "Expense" },
+                  { value: "income", label: "Income" },
+                  { value: "absolute", label: "Both" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    aria-pressed={criteria.amountMatchType === opt.value}
+                    onClick={() => updateCriteria({ amountMatchType: opt.value })}
+                    className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      criteria.amountMatchType === opt.value
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
           )}
 
           {/* Exact amount input */}
           {criteria.amountMode === 'exact' && (
             <Input
               type="number"
+              inputMode="decimal"
               step="0.01"
               value={criteria.amountEquals}
               onChange={(e) => updateCriteria({ amountEquals: e.target.value })}
@@ -386,6 +392,7 @@ export function CreateAliasModal({
             <div className="flex items-center gap-2">
               <Input
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 value={criteria.amountMin}
                 onChange={(e) => updateCriteria({ amountMin: e.target.value })}
@@ -395,6 +402,7 @@ export function CreateAliasModal({
               <span className="text-muted-foreground">to</span>
               <Input
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 value={criteria.amountMax}
                 onChange={(e) => updateCriteria({ amountMax: e.target.value })}
@@ -410,7 +418,7 @@ export function CreateAliasModal({
             <span>{totalCount} transaction{totalCount !== 1 ? "s" : ""} match</span>
           )}
         </div>
-      </div>
+      </fieldset>
 
       <div className="space-y-2">
         <label htmlFor="category" className="text-sm font-medium">Also set category (optional)</label>
@@ -537,6 +545,7 @@ export function CreateAliasModal({
                 <button
                   onClick={() => setStep(0)}
                   className="p-1 -ml-1 hover:bg-muted rounded"
+                  aria-label="Go back"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
@@ -603,11 +612,11 @@ export function CreateAliasModal({
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Amount conditions (optional)</label>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium">Amount conditions (optional)</legend>
             <div className="space-y-2">
               {/* Amount mode toggle */}
-              <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+              <div className="flex gap-1 p-1 bg-muted/50 rounded-lg" role="group" aria-label="Amount mode">
                 {([
                   { value: "none", label: "None" },
                   { value: "exact", label: "Exact" },
@@ -616,6 +625,7 @@ export function CreateAliasModal({
                   <button
                     key={opt.value}
                     type="button"
+                    aria-pressed={criteria.amountMode === opt.value}
                     onClick={() => updateCriteria({
                       amountMode: opt.value,
                       ...(opt.value === 'none' ? { amountEquals: "", amountMin: "", amountMax: "" } : {}),
@@ -635,32 +645,37 @@ export function CreateAliasModal({
 
               {/* Expense/Income/Both toggle */}
               {criteria.amountMode !== 'none' && (
-                <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
-                  {([
-                    { value: "expense", label: "Expense" },
-                    { value: "income", label: "Income" },
-                    { value: "absolute", label: "Both" },
-                  ] as const).map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => updateCriteria({ amountMatchType: opt.value })}
-                      className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                        criteria.amountMatchType === opt.value
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
+                <fieldset>
+                  <legend className="sr-only">Amount match type</legend>
+                  <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+                    {([
+                      { value: "expense", label: "Expense" },
+                      { value: "income", label: "Income" },
+                      { value: "absolute", label: "Both" },
+                    ] as const).map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        aria-pressed={criteria.amountMatchType === opt.value}
+                        onClick={() => updateCriteria({ amountMatchType: opt.value })}
+                        className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          criteria.amountMatchType === opt.value
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
               )}
 
               {/* Exact amount input */}
               {criteria.amountMode === 'exact' && (
                 <Input
                   type="number"
+                  inputMode="decimal"
                   step="0.01"
                   value={criteria.amountEquals}
                   onChange={(e) => updateCriteria({ amountEquals: e.target.value })}
@@ -673,6 +688,7 @@ export function CreateAliasModal({
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
+                    inputMode="decimal"
                     step="0.01"
                     value={criteria.amountMin}
                     onChange={(e) => updateCriteria({ amountMin: e.target.value })}
@@ -681,6 +697,7 @@ export function CreateAliasModal({
                   <span className="text-muted-foreground">to</span>
                   <Input
                     type="number"
+                    inputMode="decimal"
                     step="0.01"
                     value={criteria.amountMax}
                     onChange={(e) => updateCriteria({ amountMax: e.target.value })}
@@ -696,7 +713,7 @@ export function CreateAliasModal({
                 <span>{totalCount} transaction{totalCount !== 1 ? "s" : ""} match</span>
               )}
             </div>
-          </div>
+          </fieldset>
 
           <div className="space-y-2">
             <label htmlFor="category" className="text-sm font-medium">Also set category (optional)</label>

@@ -33,7 +33,7 @@ export function AIInsights({
   }
 
   const content = (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-3" aria-live="polite">
       <div className="shrink-0 mt-0.5">
         <AnimatePresence mode="wait">
           {isLoading || isModelLoading ? (
@@ -43,7 +43,7 @@ export function AIInsights({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
             >
-              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+              <Loader2 className="w-4 h-4 text-primary animate-spin" aria-hidden="true" />
             </motion.div>
           ) : (
             <motion.div
@@ -52,7 +52,7 @@ export function AIInsights({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
             >
-              <Sparkles className="w-4 h-4 text-primary" />
+              <Sparkles className="w-4 h-4 text-primary" aria-hidden="true" />
             </motion.div>
           )}
         </AnimatePresence>
@@ -111,7 +111,7 @@ export function AIInsights({
           size="icon"
           className="shrink-0 h-7 w-7 text-muted-foreground hover:text-foreground"
           onClick={onRegenerate}
-          title="Regenerate insight"
+          aria-label="Regenerate insight"
         >
           <RefreshCw className="w-3.5 h-3.5" />
         </Button>

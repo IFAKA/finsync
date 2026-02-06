@@ -59,6 +59,7 @@ export function SyncStatus() {
         onTouchStart={handleInteractionStart}
         onTouchEnd={handleInteractionEnd}
         className={`relative ${getStatusColor()}`}
+        aria-label={getTooltipText()}
         title={getTooltipText()}
       >
         <AnimatePresence mode="wait">

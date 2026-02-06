@@ -14,7 +14,7 @@ const buttonVariants = cva(
   [
     "inline-flex items-center justify-center gap-2 whitespace-nowrap",
     "text-sm font-medium",
-    "transition-all duration-150",
+    "transition-[transform,opacity,background-color,border-color,color] duration-150",
     // Focus visible ring (Vercel guideline)
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     // Disabled state

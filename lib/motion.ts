@@ -26,3 +26,6 @@ export const transitions: Record<string, Transition> = {
   spring: { type: "spring", stiffness: 400, damping: 30 },
   springGentle: { type: "spring", stiffness: 200, damping: 25 },
 };
+
+// Instant transition for reduced motion edge cases
+export const reducedMotionTransition: Transition = { duration: 0 };

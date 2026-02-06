@@ -51,6 +51,88 @@ export interface LocalBudget {
 
 export type AmountMatchType = 'absolute' | 'expense' | 'income';
 
+// Planning: Savings Goals
+export interface LocalSavingsGoal {
+  id: string;
+  serverId?: number;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate?: Date;
+  color: string;
+  icon?: string;
+  categoryId?: string; // Optional: auto-track from category
+  trackingMode: 'manual' | 'auto';
+  createdAt: Date;
+  _lastModified: Date;
+  _deleted: boolean;
+}
+
+// Planning: Recurring Transaction Patterns
+export type RecurringFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+export type RecurringSource = 'detected' | 'manual';
+
+export interface LocalRecurringPattern {
+  id: string;
+  serverId?: number;
+  name: string;
+  type: 'expense' | 'income';
+  amount: number;
+  frequency: RecurringFrequency;
+  categoryId?: string;
+  descriptionPattern?: string;
+  nextDate?: Date;
+  lastDate?: Date;
+  isActive: boolean;
+  confidence: number; // 0-1 for detected patterns
+  source: RecurringSource;
+  createdAt: Date;
+  _lastModified: Date;
+  _deleted: boolean;
+}
+
+// Planning: What-If Scenarios
+export type ScenarioModificationType =
+  | 'adjust_budget'
+  | 'add_expense'
+  | 'remove_expense'
+  | 'add_income'
+  | 'adjust_recurring';
+
+export interface ScenarioModification {
+  id: string;
+  type: ScenarioModificationType;
+  categoryId?: string;
+  recurringPatternId?: string;
+  amount?: number;
+  description?: string;
+}
+
+export interface LocalScenario {
+  id: string;
+  serverId?: number;
+  name: string;
+  baseMonth: string; // Format: "YYYY-MM"
+  modifications: ScenarioModification[];
+  projectionMonths: number;
+  createdAt: Date;
+  _lastModified: Date;
+  _deleted: boolean;
+}
+
+// Planning: Goal Contributions
+export interface LocalGoalContribution {
+  id: string;
+  serverId?: number;
+  goalId: string;
+  amount: number;
+  date: Date;
+  transactionId?: string;
+  createdAt: Date;
+  _lastModified: Date;
+  _deleted: boolean;
+}
+
 export interface LocalRule {
   id: string; // UUID for sync
   serverId?: number;
@@ -84,6 +166,10 @@ class BudgetDatabase extends Dexie {
   budgets!: EntityTable<LocalBudget, "id">;
   rules!: EntityTable<LocalRule, "id">;
   syncState!: EntityTable<SyncState, "id">;
+  savingsGoals!: EntityTable<LocalSavingsGoal, "id">;
+  recurringPatterns!: EntityTable<LocalRecurringPattern, "id">;
+  scenarios!: EntityTable<LocalScenario, "id">;
+  goalContributions!: EntityTable<LocalGoalContribution, "id">;
 
   constructor() {
     super("BudgetDB");
@@ -95,6 +181,20 @@ class BudgetDatabase extends Dexie {
       budgets: "id, serverId, categoryId, month, _lastModified, _deleted",
       rules: "id, serverId, categoryId, priority, _lastModified, _deleted",
       syncState: "id",
+    });
+
+    // Version 2: Planning features
+    this.version(2).stores({
+      categories: "id, serverId, name, _lastModified, _deleted",
+      transactions:
+        "id, serverId, date, categoryId, importBatchId, _lastModified, _deleted",
+      budgets: "id, serverId, categoryId, month, _lastModified, _deleted",
+      rules: "id, serverId, categoryId, priority, _lastModified, _deleted",
+      syncState: "id",
+      savingsGoals: "id, serverId, categoryId, _lastModified, _deleted",
+      recurringPatterns: "id, serverId, categoryId, source, isActive, _lastModified, _deleted",
+      scenarios: "id, serverId, baseMonth, _lastModified, _deleted",
+      goalContributions: "id, serverId, goalId, date, transactionId, _lastModified, _deleted",
     });
   }
 }

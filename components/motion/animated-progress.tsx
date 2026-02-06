@@ -84,6 +84,10 @@ export function AnimatedProgress({
   return (
     <div ref={ref} className={cn("w-full", className)}>
       <div
+        role="progressbar"
+        aria-valuenow={Math.round(percentage)}
+        aria-valuemin={0}
+        aria-valuemax={100}
         className={cn(
           "relative w-full overflow-hidden rounded-full bg-border",
           heightClasses[height]

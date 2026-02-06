@@ -56,8 +56,7 @@ export function ConfirmDialog({
             {cancelLabel}
           </Button>
           <Button
-            variant={variant === "destructive" ? "default" : "default"}
-            className={variant === "destructive" ? "bg-error hover:bg-error/90 text-white" : ""}
+            variant={variant === "destructive" ? "destructive" : "default"}
             onClick={handleConfirm}
             disabled={isLoading}
           >

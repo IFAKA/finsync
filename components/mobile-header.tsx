@@ -58,7 +58,7 @@ export function MobileHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:hidden">
+    <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:hidden pt-[env(safe-area-inset-top)]">
       <div className="px-4">
         <div className="flex h-12 items-center justify-between">
           <Link

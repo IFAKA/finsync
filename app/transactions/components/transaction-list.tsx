@@ -81,8 +81,11 @@ export function TransactionList({
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.02 }}
+                      role="button"
+                      tabIndex={0}
                       className="p-3 sm:p-4 flex items-center justify-between gap-2 hover:bg-muted/5 transition-colors cursor-pointer active:bg-muted/10"
                       onClick={() => onTransactionClick(t)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onTransactionClick(t); } }}
                     >
                       {/* Category dot + Description */}
                       <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -115,6 +118,7 @@ export function TransactionList({
                           }}
                         >
                           <SelectTrigger
+                            aria-label="Select category"
                             className="h-7 text-xs w-auto min-w-[120px] border-l-2"
                             style={{ borderLeftColor: categoryInfo.color }}
                           >

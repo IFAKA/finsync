@@ -123,6 +123,7 @@ export default function RulesPage() {
 
   return (
     <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-3 sm:space-y-6">
+      <h1 className="sr-only md:hidden">Rules</h1>
       {/* Mobile Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -134,6 +135,7 @@ export default function RulesPage() {
           whileTap={{ scale: 0.95 }}
           onClick={openCreateModal}
           disabled={modalOpen}
+          aria-label="Create new rule"
           className="h-10 w-10 flex items-center justify-center bg-foreground text-background rounded-lg disabled:opacity-50"
         >
           <Plus className="w-5 h-5" />
@@ -182,14 +184,17 @@ export default function RulesPage() {
                     key={rule.id}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
+                    role="button"
+                    tabIndex={0}
                     className="p-3 sm:p-4 hover:bg-muted/5 active:bg-muted/10 transition-colors cursor-pointer"
                     onClick={() => openEditModal(rule)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEditModal(rule); } }}
                   >
                     {/* Mobile Layout */}
                     <div className="flex items-start gap-2 md:hidden">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-sm">{rule.name}</span>
+                          <span className="font-medium text-sm truncate">{rule.name}</span>
                           {categoryInfo && (
                             <span
                               className="text-xs px-1.5 py-0.5 rounded-full"
@@ -211,7 +216,7 @@ export default function RulesPage() {
                           {rule.descriptionContains && <span>"{rule.descriptionContains}"</span>}
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-error" onClick={(e) => { e.stopPropagation(); handleDeleteClick(rule.id, rule.name); }}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-error" aria-label={`Delete rule ${rule.name}`} onClick={(e) => { e.stopPropagation(); handleDeleteClick(rule.id, rule.name); }}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -242,7 +247,7 @@ export default function RulesPage() {
                           {rule.descriptionContains && <span>Contains: "{rule.descriptionContains}"</span>}
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-error" onClick={(e) => { e.stopPropagation(); handleDeleteClick(rule.id, rule.name); }}>
+                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-error" aria-label={`Delete rule ${rule.name}`} onClick={(e) => { e.stopPropagation(); handleDeleteClick(rule.id, rule.name); }}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
