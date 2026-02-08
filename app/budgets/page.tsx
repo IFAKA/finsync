@@ -287,19 +287,17 @@ export default function BudgetsPage() {
       ) : (
         <>
           {categoriesWithBudgets.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2 hidden md:block">
-                <CardTitle className="text-base font-medium">Active Budgets</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y divide-border">
-                  {categoriesWithBudgets.map((item) => {
-                    const percentage = item.monthlyLimit ? (item.spent / item.monthlyLimit) * 100 : 0;
-                    const isOverBudget = percentage > 100;
-                    const isNearLimit = percentage >= 80 && percentage <= 100;
+            <>
+              <h2 className="text-base font-medium hidden md:block">Active Budgets</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {categoriesWithBudgets.map((item) => {
+                  const percentage = item.monthlyLimit ? (item.spent / item.monthlyLimit) * 100 : 0;
+                  const isOverBudget = percentage > 100;
+                  const isNearLimit = percentage >= 80 && percentage <= 100;
 
-                    return (
-                      <div key={item.categoryId} className="p-3 sm:p-4">
+                  return (
+                    <Card key={item.categoryId}>
+                      <CardContent className="p-3 sm:p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2 sm:gap-3">
                             <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full shrink-0" style={{ backgroundColor: item.categoryColor }} />
@@ -320,24 +318,25 @@ export default function BudgetsPage() {
                           )}
                         </div>
                         <Progress value={Math.min(percentage, 100)} className="h-1.5" indicatorClassName={isOverBudget ? "bg-error" : isNearLimit ? "bg-warning" : "bg-success"} />
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+                        <p className="text-xs text-muted-foreground mt-1.5">
+                          {item.spent <= item.monthlyLimit! ? `${formatCurrency(item.monthlyLimit! - item.spent)} remaining` : `${formatCurrency(item.spent - item.monthlyLimit!)} over`}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </>
           )}
 
           {categoriesWithoutBudgets.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2 hidden md:block">
-                <CardTitle className="text-base font-medium">Unbudgeted Spending</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <p className="text-xs text-muted-foreground px-3 pt-3 md:hidden">Unbudgeted</p>
-                <div className="divide-y divide-border">
-                  {categoriesWithoutBudgets.map((item) => (
-                    <div key={item.categoryId} className="p-3 sm:p-4 flex items-center justify-between">
+            <>
+              <h2 className="text-base font-medium hidden md:block">Unbudgeted Spending</h2>
+              <p className="text-xs text-muted-foreground md:hidden">Unbudgeted</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {categoriesWithoutBudgets.map((item) => (
+                  <Card key={item.categoryId}>
+                    <CardContent className="p-3 sm:p-4 flex items-center justify-between">
                       <div className="flex items-center gap-2 sm:gap-3">
                         <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full shrink-0" style={{ backgroundColor: item.categoryColor }} />
                         <span className="font-medium text-sm sm:text-base">{item.categoryName}</span>
@@ -354,11 +353,11 @@ export default function BudgetsPage() {
                           <Button size="sm" variant="ghost" className="text-xs h-7 px-2" onClick={() => handleEdit(item.categoryId, null)}>Set</Button>
                         </div>
                       )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
           )}
 
           {categoriesWithBudgets.length === 0 && categoriesWithoutBudgets.length === 0 && (

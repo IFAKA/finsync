@@ -154,28 +154,23 @@ export function MobileTransactionFilters({
   );
 
   return (
-    <div className="flex flex-col gap-3 md:hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        {needsAttention ? (
-          <div className="flex items-center gap-2 bg-warning/10 border border-warning/30 rounded-lg px-3 py-1.5">
-            <AlertTriangle className="w-4 h-4 text-warning" />
-            <span className="text-sm font-medium">Needs Attention</span>
-            <button
-              onClick={() => onNeedsAttentionChange(false)}
-              className="p-0.5 hover:bg-warning/20 rounded ml-1"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ) : (
-          <div />
-        )}
-        <span className="text-sm text-muted-foreground">{totalCount} transactions</span>
-      </div>
+    <div className="flex flex-col gap-2 md:hidden">
+      {/* Attention banner */}
+      {needsAttention && (
+        <div className="flex items-center gap-2 bg-warning/10 border border-warning/30 rounded-lg px-3 py-1.5">
+          <AlertTriangle className="w-4 h-4 text-warning" />
+          <span className="text-sm font-medium">Needs Attention</span>
+          <button
+            onClick={() => onNeedsAttentionChange(false)}
+            className="p-0.5 hover:bg-warning/20 rounded ml-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Search with NL indicator */}
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -213,57 +208,64 @@ export function MobileTransactionFilters({
         </AnimatePresence>
       </div>
 
-      {/* Filters */}
-      <Select value={selectedCategory} onValueChange={onCategoryChange}>
-        <SelectTrigger className="h-9" aria-label="Filter by category">
-          <SelectValue placeholder="Category" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Categories</SelectItem>
-          {categories.map((cat) => (
-            <SelectItem key={cat.id} value={cat.id}>
-              <div className="flex items-center gap-2">
-                <span
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{ backgroundColor: cat.color }}
-                />
-                <span className="truncate">{cat.name}</span>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Compact horizontal filter row */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
+        <Select value={selectedCategory} onValueChange={onCategoryChange}>
+          <SelectTrigger className="h-8 text-xs w-auto min-w-0 shrink-0 gap-1 px-2.5 rounded-full bg-muted/50 border-0" aria-label="Filter by category">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: cat.color }}
+                  />
+                  <span className="truncate">{cat.name}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Select value={selectedMonth || "all"} onValueChange={onMonthChange}>
-        <SelectTrigger className="h-9" aria-label="Filter by month">
-          <SelectValue placeholder="Month" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Time</SelectItem>
-          {availableMonths.map((month) => (
-            <SelectItem key={month} value={month}>
-              {formatMonthLabel(month)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Select value={selectedMonth || "all"} onValueChange={onMonthChange}>
+          <SelectTrigger className="h-8 text-xs w-auto min-w-0 shrink-0 gap-1 px-2.5 rounded-full bg-muted/50 border-0" aria-label="Filter by month">
+            <SelectValue placeholder="Month" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Time</SelectItem>
+            {availableMonths.map((month) => (
+              <SelectItem key={month} value={month}>
+                {formatMonthLabel(month)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Select value={sortBy} onValueChange={(v) => onSortChange(v as "date" | "amount")}>
-        <SelectTrigger className="h-9" aria-label="Sort by">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="date">Newest</SelectItem>
-          <SelectItem value="amount">Expensive</SelectItem>
-        </SelectContent>
-      </Select>
+        <Select value={sortBy} onValueChange={(v) => onSortChange(v as "date" | "amount")}>
+          <SelectTrigger className="h-8 text-xs w-auto min-w-0 shrink-0 gap-1 px-2.5 rounded-full bg-muted/50 border-0" aria-label="Sort by">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="date">Newest</SelectItem>
+            <SelectItem value="amount">Expensive</SelectItem>
+          </SelectContent>
+        </Select>
 
-      {hasFilters && (
-        <Button variant="ghost" size="sm" onClick={onClearFilters} className="w-full">
-          <X className="w-4 h-4 mr-2" />
-          Clear Filters
-        </Button>
-      )}
+        <span className="text-xs text-muted-foreground shrink-0 ml-auto">{totalCount}</span>
+
+        {hasFilters && (
+          <button
+            onClick={onClearFilters}
+            className="shrink-0 h-8 w-8 flex items-center justify-center rounded-full bg-muted/50 text-muted-foreground hover:text-foreground"
+            aria-label="Clear filters"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

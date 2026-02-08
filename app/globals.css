@@ -487,6 +487,15 @@ textarea {
   opacity: 0.5;
 }
 
+/* Hide scrollbar for horizontal filter rows */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Active touch feedback */
 @media (hover: none) and (pointer: coarse) {
   .touch-feedback:active {

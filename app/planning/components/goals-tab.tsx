@@ -140,17 +140,19 @@ export function GoalsTab() {
       )}
 
       {/* Goals List */}
-      <AnimatePresence mode="popLayout">
-        {goalProgressList.map(progress => (
-          <GoalCard
-            key={progress.goal.id}
-            progress={progress}
-            onEdit={() => setGoalModal({ open: true, goal: progress.goal })}
-            onDelete={() => setDeleteConfirm({ goalId: progress.goal.id, goalName: progress.goal.name })}
-            onAddContribution={() => setContributionModal({ open: true, goalId: progress.goal.id })}
-          />
-        ))}
-      </AnimatePresence>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <AnimatePresence mode="popLayout">
+          {goalProgressList.map(progress => (
+            <GoalCard
+              key={progress.goal.id}
+              progress={progress}
+              onEdit={() => setGoalModal({ open: true, goal: progress.goal })}
+              onDelete={() => setDeleteConfirm({ goalId: progress.goal.id, goalName: progress.goal.name })}
+              onAddContribution={() => setContributionModal({ open: true, goalId: progress.goal.id })}
+            />
+          ))}
+        </AnimatePresence>
+      </div>
 
       {/* Empty State */}
       {goals.length === 0 && (

@@ -37,7 +37,7 @@ export default function Home() {
   };
 
   return (
-    <div className="p-4 sm:p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-8 max-w-5xl lg:max-w-6xl mx-auto">
       <Dashboard onUploadClick={() => setUploadOpen(true)} />
 
       <ResponsiveModal open={uploadOpen} onOpenChange={handleOpenChange} className="sm:max-w-xl">

@@ -31,7 +31,7 @@ export default function TransactionsPage() {
 
 function TransactionsLoading() {
   return (
-    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-5xl lg:max-w-6xl mx-auto space-y-6">
       <div className="h-8 w-32 bg-border rounded animate-pulse" />
       <div className="h-10 w-full bg-border rounded animate-pulse" />
       <Card>
@@ -117,7 +117,7 @@ function TransactionsContent() {
   const isLoading = transactionsLoading || categoriesLoading || monthsLoading;
 
   return (
-    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-3 sm:space-y-6">
+    <div className="p-4 sm:p-8 max-w-5xl lg:max-w-6xl mx-auto space-y-3 sm:space-y-6">
       <MobileTransactionFilters
         totalCount={filters.totalCount}
         search={filters.search}

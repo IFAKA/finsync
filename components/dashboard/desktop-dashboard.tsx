@@ -164,9 +164,9 @@ export function DesktopDashboard({
         onRegenerate={aiInsights.regenerate}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className={`grid gap-4 ${attentionCount > 0 ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
         <FadeIn delay={0.2}>
-          <Card className="hover-lift">
+          <Card className="hover-lift h-full">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-medium">Recent</CardTitle>
@@ -184,7 +184,7 @@ export function DesktopDashboard({
             <CardContent>
               {transactions.length > 0 ? (
                 <div className="space-y-1">
-                  {transactions.slice(0, 5).map((t, index) => {
+                  {transactions.slice(0, attentionCount > 0 ? 6 : 5).map((t, index) => {
                     const cat = categories.find((c) => c.id === t.categoryId);
                     return (
                       <motion.div
@@ -222,7 +222,7 @@ export function DesktopDashboard({
           </Card>
         </FadeIn>
         <FadeIn delay={0.3}>
-          <Card className="hover-lift">
+          <Card className="hover-lift h-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium">By Category</CardTitle>
             </CardHeader>
@@ -231,18 +231,20 @@ export function DesktopDashboard({
             </CardContent>
           </Card>
         </FadeIn>
-      </div>
 
-      {attentionCount > 0 && (
-        <NeedsAttentionSection
-          transactions={transactions}
-          categories={categories}
-          attentionCount={attentionCount}
-          selectedMonth={selectedMonth}
-          onCategoryChange={onCategoryChange}
-          rules={rules}
-        />
-      )}
+        {attentionCount > 0 && (
+          <FadeIn delay={0.4}>
+            <NeedsAttentionSection
+              transactions={transactions}
+              categories={categories}
+              attentionCount={attentionCount}
+              selectedMonth={selectedMonth}
+              onCategoryChange={onCategoryChange}
+              rules={rules}
+            />
+          </FadeIn>
+        )}
+      </div>
     </div>
   );
 }
@@ -263,7 +265,7 @@ function NeedsAttentionSection({
   rules: LocalRule[];
 }) {
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-medium flex items-center gap-2">

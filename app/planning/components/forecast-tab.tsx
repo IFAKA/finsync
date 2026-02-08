@@ -105,7 +105,7 @@ export function ForecastTab() {
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
@@ -233,9 +233,11 @@ function ForecastChart({ forecasts }: ForecastChartProps) {
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
+        // Taller chart on desktop for better readability
+        const isDesktop = window.innerWidth >= 768;
         setDimensions({
           width: containerRef.current.clientWidth,
-          height: 200,
+          height: isDesktop ? 280 : 200,
         });
       }
     };
@@ -246,7 +248,7 @@ function ForecastChart({ forecasts }: ForecastChartProps) {
   }, []);
 
   if (forecasts.length === 0 || dimensions.width === 0) {
-    return <div ref={containerRef} className="h-[200px] flex items-center justify-center text-muted-foreground">
+    return <div ref={containerRef} className="h-[200px] md:h-[280px] flex items-center justify-center text-muted-foreground">
       No forecast data available
     </div>;
   }

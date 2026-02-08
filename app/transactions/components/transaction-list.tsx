@@ -73,6 +73,13 @@ export function TransactionList({
               </div>
             ) : transactions.length > 0 ? (
               <div className="divide-y divide-border">
+                {/* Desktop table header */}
+                <div className="hidden md:flex items-center px-4 py-2 text-xs text-muted-foreground font-medium bg-muted/30 border-b border-border">
+                  <span className="flex-1">Description</span>
+                  <span className="w-20 text-left">Date</span>
+                  <span className="w-[120px] text-left ml-3">Category</span>
+                  <span className="w-[80px] text-right ml-3">Amount</span>
+                </div>
                 {transactions.map((t, index) => {
                   const categoryInfo = getCategoryInfo(t.categoryId);
                   return (
