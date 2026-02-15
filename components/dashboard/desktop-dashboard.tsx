@@ -7,6 +7,7 @@ import {
   Plus,
   ArrowRight,
   AlertTriangle,
+  Wallet,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -38,6 +39,7 @@ interface DesktopDashboardProps {
     savings: number;
     byCategory: Array<{ categoryId: string; amount: number }>;
   };
+  balance: number;
   selectedMonth: string | null;
   availableMonths: string[];
   onUploadClick: () => void;
@@ -58,6 +60,7 @@ interface DesktopDashboardProps {
 
 export function DesktopDashboard({
   summary,
+  balance,
   selectedMonth,
   availableMonths,
   onUploadClick,
@@ -115,7 +118,7 @@ export function DesktopDashboard({
 
       <section aria-labelledby="monthly-summary-heading">
       <h2 id="monthly-summary-heading" className="sr-only">Monthly Summary</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StaggerItem index={0}>
           <Card className="hover-lift">
             <CardContent className="pt-6">
@@ -147,6 +150,19 @@ export function DesktopDashboard({
               >
                 {summary.savings >= 0 ? "+" : ""}
                 <AnimatedNumber value={summary.savings} />
+              </p>
+            </CardContent>
+          </Card>
+        </StaggerItem>
+        <StaggerItem index={3}>
+          <Card className="hover-lift">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                <Wallet className="w-3.5 h-3.5" />
+                <p className="text-sm">Balance</p>
+              </div>
+              <p className="text-2xl font-semibold">
+                <AnimatedNumber value={balance} />
               </p>
             </CardContent>
           </Card>

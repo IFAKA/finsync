@@ -8,6 +8,7 @@ import {
   useBudgets,
   useMonthlySummary,
   useTransactionCount,
+  useCurrentBalance,
   type LocalCategory,
 } from "@/lib/hooks/db";
 
@@ -27,6 +28,7 @@ export function useDashboardData() {
   const { data: availableMonths } = useAvailableMonths();
   const { data: transactionCount } = useTransactionCount(selectedMonth || undefined);
   const { data: summary, isLoading: summaryLoading } = useMonthlySummary(selectedMonth || "");
+  const { data: balance } = useCurrentBalance();
   const { data: budgets } = useBudgets(selectedMonth || undefined);
   const { data: transactions } = useTransactions({
     month: selectedMonth || undefined,
@@ -104,6 +106,7 @@ export function useDashboardData() {
     transactionCount,
     summary,
     summaryLoading,
+    balance,
     budgets,
     transactions,
     budgetData,

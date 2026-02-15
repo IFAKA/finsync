@@ -9,6 +9,7 @@ export {
   useAvailableMonths,
   useTransactionMutations,
   useFindSimilarTransactions,
+  useCurrentBalance,
   useMonthlySummary,
 } from "./use-transactions";
 export { useBudgets, useBudgetMutations } from "./use-budgets";

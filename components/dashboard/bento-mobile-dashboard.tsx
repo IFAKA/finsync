@@ -11,6 +11,7 @@ import {
   TrendingDown,
   PiggyBank,
   Target,
+  Wallet,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { AnimatedNumber } from "@/components/motion";
@@ -26,6 +27,7 @@ interface BentoMobileProps {
     savings: number;
     byCategory: Array<{ categoryId: string; amount: number }>;
   };
+  balance: number;
   budgetData: BudgetItem[];
   attentionCount: number;
   transactionCount: number;
@@ -46,6 +48,7 @@ interface BentoMobileProps {
 
 export function BentoMobileDashboard({
   summary,
+  balance,
   attentionCount,
   transactionCount,
   selectedMonth,
@@ -86,6 +89,20 @@ export function BentoMobileDashboard({
           <Plus className="w-5 h-5" />
         </motion.button>
       </div>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-card border border-border rounded-xl p-4 touch-feedback"
+      >
+        <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+          <Wallet className="w-3.5 h-3.5" />
+          <span className="text-xs">Balance</span>
+        </div>
+        <p className="text-fluid-2xl font-semibold tabular-nums">
+          <AnimatedNumber value={balance} />
+        </p>
+      </motion.div>
 
       <div className="grid grid-cols-2 gap-2">
         <motion.div

@@ -104,6 +104,16 @@ export async function findSimilarTransactions(
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
+// Current balance: sum of all non-deleted transaction amounts
+export async function getCurrentBalance(): Promise<number> {
+  const db = getLocalDB();
+  const transactions = await db.transactions
+    .filter((t) => !t._deleted)
+    .toArray();
+
+  return transactions.reduce((sum, tx) => sum + tx.amount, 0);
+}
+
 // Available months (for UI)
 export async function getAvailableMonths(): Promise<string[]> {
   const db = getLocalDB();

@@ -22,6 +22,7 @@ export function Dashboard({ onUploadClick }: DashboardProps) {
     transactionCount,
     summary,
     summaryLoading,
+    balance,
     transactions,
     budgetData,
     attentionCount,
@@ -65,6 +66,7 @@ export function Dashboard({ onUploadClick }: DashboardProps) {
     <div className="space-y-6">
       <BentoMobileDashboard
         summary={summary}
+        balance={balance}
         budgetData={budgetData}
         attentionCount={attentionCount}
         transactionCount={transactionCount}
@@ -80,6 +82,7 @@ export function Dashboard({ onUploadClick }: DashboardProps) {
 
       <DesktopDashboard
         summary={summary}
+        balance={balance}
         selectedMonth={selectedMonth}
         availableMonths={availableMonths}
         onUploadClick={onUploadClick}

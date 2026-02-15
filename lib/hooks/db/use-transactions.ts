@@ -11,7 +11,7 @@ import {
   bulkUpdateTransactions,
   revertBulkUpdate,
 } from "@/lib/db/operations";
-import { findSimilarTransactions, getAvailableMonths, getMonthlySummary } from "@/lib/db/business";
+import { findSimilarTransactions, getAvailableMonths, getMonthlySummary, getCurrentBalance } from "@/lib/db/business";
 import { useDbInit, ensureDbInitialized } from "./use-db-init";
 
 export function useTransactions(options?: {
@@ -170,6 +170,20 @@ export function useFindSimilarTransactions() {
   );
 
   return { findSimilar };
+}
+
+export function useCurrentBalance() {
+  const { isReady } = useDbInit();
+
+  const balance = useLiveQuery(async () => {
+    if (!isReady) return null;
+    return getCurrentBalance();
+  }, [isReady]);
+
+  return {
+    data: balance ?? 0,
+    isLoading: !isReady || balance === undefined,
+  };
 }
 
 export function useMonthlySummary(month: string) {
