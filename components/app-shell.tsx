@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useState, useRef, useCallback } from "react";
+import { type ReactNode, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { OnboardingProvider, useOnboarding } from "@/lib/contexts/onboarding-context";
 import { NavHeader } from "@/components/nav-header";
@@ -10,18 +10,13 @@ import { Onboarding } from "@/components/onboarding";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { UploadDropzone, type UploadResult } from "@/components/upload-dropzone";
+import { type UploadResult } from "@/components/upload-dropzone";
 import { TransactionPreview } from "@/components/transaction-preview";
 import { SyncDialog } from "@/components/sync-dialog";
-import { parseExcelBuffer } from "@/lib/excel/parser";
-import { playSound } from "@/lib/sounds";
-import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useIsMobile, useIsLandscape } from "@/lib/hooks/use-media-query";
 
@@ -34,9 +29,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
-  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [syncOpen, setSyncOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   const isLandscape = useIsLandscape();
 
@@ -50,6 +43,7 @@ function AppContent({ children }: { children: ReactNode }) {
 
   const handleUploadComplete = (result: UploadResult) => {
     setUploadResult(result);
+    setUploadOpen(true);
   };
 
   const handleImportComplete = () => {
@@ -74,65 +68,6 @@ function AppContent({ children }: { children: ReactNode }) {
     }
   };
 
-  // Mobile: Direct file picker flow
-  const handleMobileFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Reset input so the same file can be selected again
-    e.target.value = "";
-
-    // Validate file
-    const validExtensions = [".xlsx", ".xls"];
-    const isValidExt = validExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
-    if (!isValidExt) {
-      toast.error("Please upload an Excel file (.xlsx or .xls)");
-      playSound("error");
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("File size must be less than 10MB");
-      playSound("error");
-      return;
-    }
-
-    setIsProcessingFile(true);
-    setUploadOpen(true);
-
-    try {
-      const buffer = await file.arrayBuffer();
-      const result = await parseExcelBuffer(buffer, file.name);
-
-      setUploadResult({
-        filename: result.filename,
-        bankName: result.bankFormat?.name || null,
-        transactions: result.transactions.map((t) => ({
-          date: t.date.toISOString(),
-          description: t.description,
-          amount: t.amount,
-          balance: t.balance,
-        })),
-      });
-      playSound("complete");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to parse file");
-      playSound("error");
-      setUploadOpen(false);
-    } finally {
-      setIsProcessingFile(false);
-    }
-  }, []);
-
-  const handleOnboardingUpload = () => {
-    if (isMobile) {
-      // Mobile: trigger file picker directly
-      fileInputRef.current?.click();
-    } else {
-      // Desktop: open modal with dropzone
-      setUploadOpen(true);
-    }
-  };
 
   const handleOnboardingSync = () => {
     setSyncOpen(true);
@@ -166,19 +101,10 @@ function AppContent({ children }: { children: ReactNode }) {
   if (!isOnboardingComplete) {
     return (
       <>
-        {/* Hidden file input for mobile */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".xlsx,.xls"
-          onChange={handleMobileFileSelect}
-          className="hidden"
-        />
-
         <main className="min-h-screen">
           <Onboarding
-            onUploadClick={handleOnboardingUpload}
             onSyncClick={handleOnboardingSync}
+            onUploadComplete={handleUploadComplete}
           />
         </main>
 
@@ -197,12 +123,7 @@ function AppContent({ children }: { children: ReactNode }) {
               <VisuallyHidden.Root>
                 <DrawerTitle>Import transactions</DrawerTitle>
               </VisuallyHidden.Root>
-              {isProcessingFile ? (
-                <div className="flex flex-col items-center justify-center py-12 px-4 loading-delayed">
-                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mb-4" />
-                  <p className="text-sm text-muted-foreground">Processing file...</p>
-                </div>
-              ) : uploadResult ? (
+              {uploadResult ? (
                 <div className="px-4 pb-8 pt-2 overflow-y-auto">
                   <TransactionPreview
                     filename={uploadResult.filename}
@@ -219,17 +140,7 @@ function AppContent({ children }: { children: ReactNode }) {
           /* Desktop/tablet/landscape: Modal dialog */
           <Dialog open={uploadOpen} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-xl md:max-w-2xl">
-              {!uploadResult ? (
-                <>
-                  <DialogHeader>
-                    <DialogTitle>Import Statement</DialogTitle>
-                    <DialogDescription>
-                      Upload your bank statement to import transactions
-                    </DialogDescription>
-                  </DialogHeader>
-                  <UploadDropzone onUploadComplete={handleUploadComplete} />
-                </>
-              ) : (
+              {uploadResult && (
                 <>
                   <VisuallyHidden.Root>
                     <DialogTitle>Review transactions</DialogTitle>

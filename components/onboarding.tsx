@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronLeft, Upload, Tags, PiggyBank, Sparkles, RefreshCw } from "lucide-react";
+import { ChevronRight, ChevronLeft, Tags, PiggyBank, Sparkles, RefreshCw, Upload } from "lucide-react";
 import {
   MotionButton,
   FadeIn,
@@ -11,10 +11,11 @@ import {
 } from "@/components/motion";
 import { playSound } from "@/lib/sounds";
 import { useMediaQuery } from "@/lib/hooks/use-media-query";
+import { UploadDropzone, type UploadResult } from "@/components/upload-dropzone";
 
 interface OnboardingProps {
-  onUploadClick: () => void;
   onSyncClick: () => void;
+  onUploadComplete: (result: UploadResult) => void;
 }
 
 const STEPS = [
@@ -80,7 +81,7 @@ const iconVariants = {
   },
 };
 
-export function Onboarding({ onUploadClick, onSyncClick }: OnboardingProps) {
+export function Onboarding({ onSyncClick, onUploadComplete }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
   const isMobile = useMediaQuery("(max-width: 640px)");
@@ -101,11 +102,6 @@ export function Onboarding({ onUploadClick, onSyncClick }: OnboardingProps) {
     }
   };
 
-  const handleUpload = () => {
-    playSound("click");
-    onUploadClick();
-  };
-
   const handleSync = () => {
     playSound("click");
     onSyncClick();
@@ -114,6 +110,7 @@ export function Onboarding({ onUploadClick, onSyncClick }: OnboardingProps) {
   const step = STEPS[currentStep];
   const Icon = step.icon;
   const isLastStep = currentStep === STEPS.length - 1;
+  const isUploadStep = step.id === "upload";
 
   // Mobile: Full-screen, touch-optimized layout
   if (isMobile) {
@@ -153,41 +150,73 @@ export function Onboarding({ onUploadClick, onSyncClick }: OnboardingProps) {
               exit="exit"
               className="text-center"
             >
-              <motion.div
-                variants={iconVariants}
-                initial="initial"
-                animate="animate"
-                className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-muted flex items-center justify-center"
-              >
-                <Icon className="w-12 h-12 text-foreground" strokeWidth={1.5} />
-              </motion.div>
+              {!isUploadStep ? (
+                <>
+                  <motion.div
+                    variants={iconVariants}
+                    initial="initial"
+                    animate="animate"
+                    className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-muted flex items-center justify-center"
+                  >
+                    <Icon className="w-12 h-12 text-foreground" strokeWidth={1.5} />
+                  </motion.div>
 
-              <motion.h1
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15, ...transitions.normal }}
-                className="text-3xl font-semibold mb-4"
-              >
-                {step.title}
-              </motion.h1>
+                  <motion.h1
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15, ...transitions.normal }}
+                    className="text-3xl font-semibold mb-4"
+                  >
+                    {step.title}
+                  </motion.h1>
 
-              <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, ...transitions.normal }}
-                className="text-lg text-muted-foreground leading-relaxed mb-2"
-              >
-                {step.description}
-              </motion.p>
+                  <motion.p
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, ...transitions.normal }}
+                    className="text-lg text-muted-foreground leading-relaxed mb-2"
+                  >
+                    {step.description}
+                  </motion.p>
 
-              <motion.p
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25, ...transitions.normal }}
-                className="text-sm text-muted-foreground/70"
-              >
-                {step.detail}
-              </motion.p>
+                  <motion.p
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25, ...transitions.normal }}
+                    className="text-sm text-muted-foreground/70"
+                  >
+                    {step.detail}
+                  </motion.p>
+                </>
+              ) : (
+                <>
+                  <motion.h1
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15, ...transitions.normal }}
+                    className="text-2xl font-semibold mb-2"
+                  >
+                    {step.title}
+                  </motion.h1>
+
+                  <motion.p
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, ...transitions.normal }}
+                    className="text-sm text-muted-foreground mb-6"
+                  >
+                    {step.description}
+                  </motion.p>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25, ...transitions.normal }}
+                  >
+                    <UploadDropzone onUploadComplete={onUploadComplete} />
+                  </motion.div>
+                </>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -197,14 +226,6 @@ export function Onboarding({ onUploadClick, onSyncClick }: OnboardingProps) {
           {isLastStep ? (
             <>
               <MotionButton
-                onClick={handleUpload}
-                sound="click"
-                className="w-full h-14 text-base"
-              >
-                <Upload className="w-5 h-5" />
-                Upload Statement
-              </MotionButton>
-              <MotionButton
                 variant="secondary"
                 onClick={handleSync}
                 sound="click"
@@ -213,28 +234,39 @@ export function Onboarding({ onUploadClick, onSyncClick }: OnboardingProps) {
                 <RefreshCw className="w-4 h-4" />
                 Sync from Another Device
               </MotionButton>
+              <MotionButton
+                variant="ghost"
+                onClick={handlePrev}
+                sound="click"
+                className="w-full h-12"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back
+              </MotionButton>
             </>
           ) : (
-            <MotionButton
-              onClick={handleNext}
-              sound="click"
-              className="w-full h-14 text-base"
-            >
-              Continue
-              <ChevronRight className="w-5 h-5" />
-            </MotionButton>
-          )}
+            <>
+              <MotionButton
+                onClick={handleNext}
+                sound="click"
+                className="w-full h-14 text-base"
+              >
+                Continue
+                <ChevronRight className="w-5 h-5" />
+              </MotionButton>
 
-          {currentStep > 0 && !isLastStep && (
-            <MotionButton
-              variant="ghost"
-              onClick={handlePrev}
-              sound="click"
-              className="w-full h-12"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back
-            </MotionButton>
+              {currentStep > 0 && (
+                <MotionButton
+                  variant="ghost"
+                  onClick={handlePrev}
+                  sound="click"
+                  className="w-full h-12"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Back
+                </MotionButton>
+              )}
+            </>
           )}
         </div>
       </FadeIn>
@@ -285,41 +317,73 @@ export function Onboarding({ onUploadClick, onSyncClick }: OnboardingProps) {
                 exit="exit"
                 className="w-full text-center"
               >
-                <motion.div
-                  variants={iconVariants}
-                  initial="initial"
-                  animate="animate"
-                  className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-muted flex items-center justify-center"
-                >
-                  <Icon className="w-10 h-10 text-foreground" strokeWidth={1.5} />
-                </motion.div>
+                {!isUploadStep ? (
+                  <>
+                    <motion.div
+                      variants={iconVariants}
+                      initial="initial"
+                      animate="animate"
+                      className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-muted flex items-center justify-center"
+                    >
+                      <Icon className="w-10 h-10 text-foreground" strokeWidth={1.5} />
+                    </motion.div>
 
-                <motion.h1
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15, ...transitions.normal }}
-                  className="text-2xl font-semibold mb-4"
-                >
-                  {step.title}
-                </motion.h1>
+                    <motion.h1
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15, ...transitions.normal }}
+                      className="text-2xl font-semibold mb-4"
+                    >
+                      {step.title}
+                    </motion.h1>
 
-                <motion.p
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, ...transitions.normal }}
-                  className="text-muted-foreground leading-relaxed mb-2"
-                >
-                  {step.description}
-                </motion.p>
+                    <motion.p
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2, ...transitions.normal }}
+                      className="text-muted-foreground leading-relaxed mb-2"
+                    >
+                      {step.description}
+                    </motion.p>
 
-                <motion.p
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25, ...transitions.normal }}
-                  className="text-sm text-muted-foreground/70"
-                >
-                  {step.detail}
-                </motion.p>
+                    <motion.p
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25, ...transitions.normal }}
+                      className="text-sm text-muted-foreground/70"
+                    >
+                      {step.detail}
+                    </motion.p>
+                  </>
+                ) : (
+                  <>
+                    <motion.h1
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15, ...transitions.normal }}
+                      className="text-2xl font-semibold mb-2"
+                    >
+                      {step.title}
+                    </motion.h1>
+
+                    <motion.p
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2, ...transitions.normal }}
+                      className="text-sm text-muted-foreground mb-6"
+                    >
+                      {step.description}
+                    </motion.p>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25, ...transitions.normal }}
+                    >
+                      <UploadDropzone onUploadComplete={onUploadComplete} />
+                    </motion.div>
+                  </>
+                )}
               </motion.div>
             </AnimatePresence>
           </div>
@@ -337,20 +401,15 @@ export function Onboarding({ onUploadClick, onSyncClick }: OnboardingProps) {
                     <ChevronLeft className="w-4 h-4" />
                     Back
                   </MotionButton>
-                  <MotionButton onClick={handleUpload} sound="click" size="lg">
-                    <Upload className="w-4 h-4" />
-                    Upload Statement
+                  <MotionButton
+                    variant="secondary"
+                    onClick={handleSync}
+                    sound="click"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Sync from Another Device
                   </MotionButton>
                 </div>
-                <MotionButton
-                  variant="secondary"
-                  onClick={handleSync}
-                  sound="click"
-                  className="w-full"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Sync from Another Device
-                </MotionButton>
               </div>
             ) : (
               <div className="flex items-center justify-between gap-4">
