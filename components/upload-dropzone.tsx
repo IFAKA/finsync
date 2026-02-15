@@ -32,15 +32,18 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
     const validTypes = [
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "application/vnd.ms-excel",
+      "text/csv",
+      "text/tab-separated-values",
+      "text/plain", // Some systems serve CSV as text/plain
     ];
-    const validExtensions = [".xlsx", ".xls"];
+    const validExtensions = [".xlsx", ".xls", ".csv", ".tsv"];
 
     const isValidType =
       validTypes.includes(file.type) ||
       validExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
 
     if (!isValidType) {
-      setError("Please upload an Excel file (.xlsx or .xls)");
+      setError("Please upload an Excel or CSV file (.xlsx, .xls, .csv, .tsv)");
       playSound("error");
       return false;
     }
@@ -154,11 +157,11 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
               Drop your bank statement
             </p>
             <p className="text-sm text-muted-foreground mb-6">
-              Supports Excel files from any bank
+              Supports Excel and CSV files from any bank
             </p>
             <input
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx,.xls,.csv,.tsv"
               onChange={handleFileSelect}
               className="hidden"
               id="file-upload"
